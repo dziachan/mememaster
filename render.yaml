@@ -1,0 +1,16 @@
+# Render-Blueprint (optional): In Render "New" > "Blueprint" wählen und dieses Repo verbinden.
+services:
+  - type: web
+    name: meme-master
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/ping
+    envVars:
+      - key: ADMIN_KEY
+        sync: false # Beim Anlegen selbst ein Passwort für die Regie-Seite eintragen
+      - key: TWITCH_CHANNEL
+        value: nicodzi
+      - key: STREAMER_NAME
+        value: Nico

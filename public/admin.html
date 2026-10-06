@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Meme-Master – Regie</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  body { min-height: 100vh; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 10; }
+  header .logo { font-family: var(--display); font-size: 26px; text-transform: uppercase; margin-right: 6px; }
+  header .logo span { color: var(--acid); }
+  header .grow { flex: 1; }
+  .linkbox { display: flex; align-items: center; gap: 8px; background: #0f0f15; border: 1px solid var(--line); border-radius: 10px; padding: 4px 4px 4px 12px; font-size: 14px; max-width: 100%; }
+  .linkbox code { font-family: inherit; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+  main { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 20px; padding: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } .sticky { position: static !important; } }
+  .sticky { position: sticky; top: 84px; display: grid; gap: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .card h2 { font-size: 22px; margin-bottom: 12px; }
+  .phase { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+  .phase h2 { margin: 0; font-size: 30px; }
+  .now { background: #0f0f15; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .now .t { font-weight: 700; font-size: 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .now .s { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .live { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .live div { background: #0f0f15; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .live b { display: block; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.1; }
+  .live span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .big { width: 100%; padding: 16px; font-size: 19px; border-radius: 12px; }
+  .vol { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .vol .lab { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .vol .lab b { color: var(--ink); }
+  .vol .line { display: flex; align-items: center; gap: 12px; }
+  .vol input[type=range] { flex: 1; accent-color: var(--acid); height: 28px; cursor: pointer; }
+  .vol .btn.sel { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .vol .btn { min-width: 92px; }
+  .vol .hint { margin-top: 8px; min-height: 19px; }
+  .rate { margin: 14px 0; }
+  .rate .lab { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .rate .grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+  .rate button { padding: 10px 0; font-family: var(--display); font-size: 20px; border-radius: 8px; }
+  .rate button.sel { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .sub { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .sub .btn { flex: 1; white-space: nowrap; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button { border-radius: 999px; }
+  .tabs button.on { background: var(--ink); color: #111; border-color: var(--ink); }
+  .tabs button b { opacity: .6; margin-left: 4px; }
+  .list { display: grid; gap: 8px; }
+  .item { background: #0f0f15; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .item .line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .item .name { font-weight: 700; }
+  .item .url { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .item .acts { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .item .score { font-family: var(--display); font-size: 24px; color: var(--acid); }
+  .item .meta { color: var(--muted); font-size: 13px; }
+  .item .pos { font-family: var(--display); font-size: 20px; color: var(--muted); min-width: 28px; }
+  .item .prev { margin-top: 10px; width: 270px; height: 480px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--line); }
+  .item .prev iframe { width: 100%; height: 100%; border: 0; }
+  .empty { color: var(--muted); padding: 26px 10px; text-align: center; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .toolbar .field { flex: 1; min-width: 150px; padding: 8px 12px; }
+  details summary { cursor: pointer; font-family: var(--display); text-transform: uppercase; font-size: 22px; list-style: none; display: flex; justify-content: space-between; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: '+'; color: var(--muted); }
+  details[open] summary::after { content: '–'; }
+  .set { display: grid; gap: 12px; margin-top: 14px; }
+  .set label { font-size: 13px; font-weight: 700; color: var(--muted); display: grid; gap: 5px; }
+  .set .field { padding: 9px 12px; }
+  .set .check { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 15px; }
+  .set .check input { width: 18px; height: 18px; accent-color: var(--acid); }
+  .set .rowb { display: flex; gap: 8px; flex-wrap: wrap; }
+  .set .rowb .btn { flex: 1; white-space: nowrap; }
+  .hint { color: var(--muted); font-size: 13px; }
+  #login { position: fixed; inset: 0; background: rgba(5,5,8,.92); display: grid; place-items: center; z-index: 50; padding: 20px; }
+  #login form { width: 360px; max-width: 100%; display: grid; gap: 12px; }
+  #login h1 { font-size: 44px; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #2a1414; border: 1px solid #5a2622; color: #ffb0a9; padding: 12px 18px; border-radius: 12px; font-weight: 700; z-index: 60; max-width: 90vw; }
+  #toast.good { background: #10261a; border-color: #1f5a3a; color: #9af0c1; }
+  #restore { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 20px 0; padding: 12px 16px; border-radius: 12px; background: #2a2410; border: 1px solid #6b5a1c; color: #ffe08a; font-weight: 500; }
+  #restore span { flex: 1; min-width: 220px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Meme<span>Master</span> · Regie</div>
+  <span class="chip" id="twChip">Twitch …</span>
+  <span class="chip" id="wsChip">Verbinde …</span>
+  <div class="grow"></div>
+  <div class="linkbox"><span>Einsende-Link:</span><code id="subLink"></code><button class="btn small" id="copyLink">Kopieren</button></div>
+  <a class="btn small" href="/show" target="_blank" rel="noopener">Show-Ansicht öffnen</a>
+</header>
+
+<div id="restore" hidden>
+  <span id="restoreText"></span>
+  <button class="btn small primary" id="restoreBtn">Wiederherstellen</button>
+  <button class="btn small ghost" id="restoreNo">Verwerfen</button>
+</div>
+<main>
+  <div class="sticky">
+    <section class="card" id="regie">
+      <div class="phase"><h2 id="phaseTitle">Lobby</h2><span class="chip" id="phaseChip"></span></div>
+      <div class="now" id="nowBox" hidden><div class="t" id="nowT"></div><div class="s" id="nowS"></div></div>
+      <div class="live" id="liveBox" hidden>
+        <div><b class="num" id="lvTime">–</b><span>Restzeit</span></div>
+        <div><b class="num" id="lvCount">0</b><span>Stimmen</span></div>
+        <div><b class="num" id="lvAvg">–</b><span>Ø Chat</span></div>
+      </div>
+      <div id="controls"></div>
+      <div class="vol">
+        <div class="lab"><span>Lautstärke der Videos</span><b class="num" id="volVal">100 %</b></div>
+        <div class="line">
+          <button class="btn small" id="volMute" type="button">Ton aus</button>
+          <input type="range" id="vol" min="0" max="100" step="1" value="100" aria-label="Lautstärke der Videos">
+        </div>
+        <div class="hint" id="volHint"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <details id="settings">
+        <summary>Einstellungen</summary>
+        <div class="set">
+          <label class="check"><input type="checkbox" id="sOpen"> Einsendungen geöffnet</label>
+          <label class="check"><input type="checkbox" id="sAnon"> Einsender erst bei der Auflösung zeigen</label>
+          <label>Twitch-Kanal (Chat wird mitgelesen)<input class="field" id="sChannel" maxlength="25" spellcheck="false"></label>
+          <label>Dein Name in der Show<input class="field" id="sName" maxlength="20"></label>
+          <label>Voting-Dauer in Sekunden<input class="field" id="sSecs" type="number" min="10" max="300"></label>
+          <button class="btn" id="sSave">Einstellungen speichern</button>
+          <div class="rowb">
+            <button class="btn small" id="bExport">Backup speichern</button>
+            <button class="btn small" id="bImport">Backup laden</button>
+            <input type="file" id="fImport" accept="application/json,.json" hidden>
+          </div>
+          <div class="rowb">
+            <button class="btn small danger" data-confirm data-reset="results">Wertungen zurücksetzen</button>
+            <button class="btn small danger" data-confirm data-reset="all">Alles löschen</button>
+          </div>
+          <p class="hint">Zifferntasten 1–9 und 0 (= 10) setzen deine Wertung, solange ein Meme läuft.</p>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="tabs" id="tabs"></div>
+    <div class="toolbar" id="toolbar"></div>
+    <div class="list" id="list"></div>
+  </section>
+</main>
+
+<div id="login" hidden>
+  <form id="loginForm">
+    <h1>Regie-Login</h1>
+    <input class="field" id="key" type="password" placeholder="Admin-Passwort" autocomplete="current-password" autofocus>
+    <button class="btn primary big" type="submit">Anmelden</button>
+    <div class="hint" id="loginMsg"></div>
+  </form>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const fmt = (n, d = 2) => Number(n).toFixed(d).replace('.', ',');
+  const PLATFORM = { tiktok: 'TikTok', youtube: 'Short', instagram: 'Reel' };
+  const PHASE = {
+    lobby: ['Lobby', 'Wartet'], playing: ['Meme läuft', 'Live'], voting: ['Voting läuft', 'Live'], voted: ['Voting beendet', 'Auflösen'],
+    result: ['Auflösung', 'Gezeigt'], ranking: ['Ranking', 'Gezeigt'], finale: ['Finale', 'Gezeigt'],
+  };
+  const BUSY = ['playing', 'voting', 'voted'];
+  const EMBED_OK = /^https:\/\/www\.(youtube\.com\/embed\/|tiktok\.com\/player\/v1\/|instagram\.com\/reel\/)/;
+
+  let key = '';
+  let st = null;
+  let offset = 0;
+  let tab = 'pending';
+  let ws = null;
+  const sig = {};
+  const previews = new Set();
+  let settingsFilled = false;
+
+  // ── Login ──
+  const urlKey = new URLSearchParams(location.search).get('key');
+  if (urlKey) { try { localStorage.setItem('mm_admin_key', urlKey); } catch {} history.replaceState(null, '', '/admin'); }
+  try { key = urlKey || localStorage.getItem('mm_admin_key') || ''; } catch { key = urlKey || ''; }
+
+  async function tryLogin(k) {
+    const r = await fetch('/api/admin/state', { headers: { 'x-admin-key': k }, cache: 'no-store' });
+    if (!r.ok) return false;
+    key = k;
+    try { localStorage.setItem('mm_admin_key', k); } catch {}
+    st = await r.json();
+    return true;
+  }
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('loginMsg').textContent = '';
+    if (await tryLogin($('key').value.trim()).catch(() => false)) { $('login').hidden = true; start(); }
+    else $('loginMsg').textContent = 'Falsches Passwort.';
+  });
+  (async () => {
+    if (key && await tryLogin(key).catch(() => false)) start();
+    else $('login').hidden = false;
+  })();
+
+  // ── Server ──
+  let toastTimer;
+  function toast(msg, good) {
+    const t = $('toast');
+    t.textContent = msg; t.className = good ? 'good' : ''; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+  }
+  async function act(type, extra) {
+    try {
+      const r = await fetch('/api/admin/action', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': key },
+        body: JSON.stringify(Object.assign({ type }, extra || {})),
+      });
+      const d = await r.json();
+      if (!d.ok) toast(d.error || 'Fehler');
+      return d.ok;
+    } catch { toast('Keine Verbindung zum Server.'); return false; }
+  }
+
+  function connect() {
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=admin&key=' + encodeURIComponent(key));
+    ws.onopen = () => chip('wsChip', 'ok', 'Verbunden');
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.type !== 'state') return;
+      st = d.state; offset = st.now - Date.now();
+      render();
+    };
+    ws.onclose = () => { chip('wsChip', 'bad', 'Getrennt'); setTimeout(connect, 1500); };
+  }
+  function chip(id, cls, text) { $(id).className = 'chip ' + cls; $(id).textContent = text; }
+
+  function start() {
+    $('subLink').textContent = location.origin + '/';
+    connect();
+    render();
+    setInterval(tick, 200);
+    setInterval(() => { if (ws && ws.readyState === 1) ws.send('k'); }, 60000);
+    setInterval(() => { fetch('/api/ping').catch(() => {}); }, 240000);
+    checkRestore();
+    setInterval(autoBackup, 30000);
+  }
+
+  // ── Sicherheitsnetz: Stand regelmäßig im Browser sichern (Gratis-Hoster vergessen Daten bei Neustart) ──
+  async function autoBackup() {
+    if (!st || !st.memes.length) return;
+    try {
+      const r = await fetch('/api/admin/export', { headers: { 'x-admin-key': key } });
+      if (r.ok) localStorage.setItem('mm_backup', JSON.stringify({ at: Date.now(), data: await r.text() }));
+    } catch {}
+  }
+  function checkRestore() {
+    let b = null;
+    try { b = JSON.parse(localStorage.getItem('mm_backup') || 'null'); } catch {}
+    if (!b || !st || st.memes.length) return;
+    let n = 0;
+    try { n = JSON.parse(b.data).memes.length; } catch {}
+    if (!n) return;
+    $('restoreText').textContent = `Der Server hat keine Daten mehr (Neustart?). In diesem Browser liegt eine Sicherung mit ${n} Memes von ${new Date(b.at).toLocaleString('de-DE')}.`;
+    $('restore').hidden = false;
+    $('restoreBtn').onclick = async () => {
+      const r = await fetch('/api/admin/import', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': key }, body: b.data });
+      const d = await r.json().catch(() => ({}));
+      if (d.ok) { $('restore').hidden = true; settingsFilled = false; toast('Stand wiederhergestellt', true); } else toast(d.error || 'Wiederherstellen fehlgeschlagen.');
+    };
+    $('restoreNo').onclick = () => { $('restore').hidden = true; try { localStorage.removeItem('mm_backup'); } catch {} };
+  }
+
+  $('copyLink').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.origin + '/'); toast('Link kopiert', true); }
+    catch { toast(location.origin + '/'); }
+  });
+
+  // ── Zweistufige Bestätigung für alles Endgültige ──
+  function confirmable(btn, fn) {
+    const label = btn.textContent;
+    let armed = false, t;
+    btn.addEventListener('click', () => {
+      if (!armed) {
+        armed = true; btn.textContent = 'Wirklich? Nochmal klicken';
+        t = setTimeout(() => { armed = false; btn.textContent = label; }, 3000);
+        return;
+      }
+      clearTimeout(t); armed = false; btn.textContent = label; fn();
+    });
+  }
+  document.querySelectorAll('[data-reset]').forEach((b) => confirmable(b, () => act('reset', { what: b.dataset.reset })));
+
+  // ── Regie ──
+  function render() {
+    if (!st) return;
+    chip('twChip', st.twitch.disabled ? 'warn' : st.twitch.connected ? 'ok' : 'bad',
+      st.twitch.disabled ? 'Twitch aus' : (st.twitch.connected ? 'Chat verbunden: ' : 'Chat nicht verbunden: ') + st.twitch.channel);
+    renderRegie();
+    renderVolume();
+    renderTabs();
+    renderList();
+    fillSettings();
+    tick();
+  }
+
+  function btn(label, cls, fn, disabled) {
+    const b = el('button', 'btn ' + (cls || ''), label);
+    b.type = 'button';
+    if (disabled) b.disabled = true; else b.addEventListener('click', fn);
+    return b;
+  }
+
+  function renderRegie() {
+    const queued = st.memes.filter((m) => m.status === 'approved').length;
+    const s = [st.phase, st.current && st.current.id, st.streamerScore, queued, st.replay, st.ranking.length, st.settings.voteSeconds, st.settings.streamerName].join('|');
+    if (sig.regie === s) return;
+    sig.regie = s;
+
+    const [title, chipText] = PHASE[st.phase];
+    $('phaseTitle').textContent = title;
+    chip('phaseChip', BUSY.includes(st.phase) ? 'ok' : '', chipText);
+
+    const cur = st.current;
+    $('nowBox').hidden = !cur;
+    if (cur) {
+      const t = $('nowT');
+      t.textContent = '';
+      t.append(el('span', '', (cur.number ? 'Meme #' + cur.number + ' · ' : '') + '@' + st.currentName), el('span', 'chip ' + cur.platform, PLATFORM[cur.platform]));
+      $('nowS').textContent = cur.result
+        ? `${st.settings.streamerName}: ${cur.result.streamer} · Chat: ${cur.result.chatAvg == null ? '–' : fmt(cur.result.chatAvg)} (${cur.result.votes}) · Gesamt: ${fmt(cur.result.total)}`
+        : (st.streamerScore != null ? `Deine Wertung: ${st.streamerScore}` : 'Noch keine eigene Wertung');
+    }
+    $('liveBox').hidden = !['voting', 'voted'].includes(st.phase);
+
+    const c = $('controls');
+    c.textContent = '';
+    const sub = el('div', 'sub');
+    const nextBtn = (cls) => btn(queued ? `Nächstes Meme starten (${queued} in der Schlange)` : 'Keine Memes in der Warteschlange', cls, () => act('play'), !queued);
+    const rate = () => {
+      const box = el('div', 'rate');
+      const lab = el('div', 'lab');
+      lab.append(el('span', '', 'Deine Wertung'), el('span', '', st.streamerScore != null ? 'gesetzt: ' + st.streamerScore : 'noch offen'));
+      const grid = el('div', 'grid');
+      for (let i = 1; i <= 10; i++) grid.append(btn(String(i), st.streamerScore === i ? 'sel' : '', () => act('rate', { score: i })));
+      box.append(lab, grid);
+      return box;
+    };
+    const reveal = (cls) => btn(st.streamerScore == null ? 'Auflösen (erst selbst bewerten)' : 'Auflösen', cls, () => act('reveal'), st.streamerScore == null);
+    const skip = () => {
+      const a = btn('Überspringen', 'small danger');
+      confirmable(a, () => act('skip'));
+      const b = btn('Zurück in die Schlange', 'small', () => act('skip', { requeue: true }));
+      return [a, b];
+    };
+
+    if (st.phase === 'lobby') {
+      c.append(nextBtn('primary big'));
+      sub.append(btn('Ranking zeigen', 'small', () => act('ranking'), !st.ranking.length), btn('Finale starten', 'small', () => act('finale'), !st.ranking.length));
+    } else if (st.phase === 'playing') {
+      c.append(btn(`Voting starten (${st.settings.voteSeconds} s)`, 'primary big', () => act('voteStart')), rate());
+      sub.append(reveal('small'), ...skip());
+    } else if (st.phase === 'voting') {
+      c.append(btn('Voting sofort beenden', 'big', () => act('voteStop')), rate());
+      sub.append(btn('+25 Testvotes', 'small', () => act('testvotes', { count: 25 })), ...skip());
+    } else if (st.phase === 'voted') {
+      c.append(reveal('primary big'), rate());
+      sub.append(btn(`Voting nochmal öffnen (${st.settings.voteSeconds} s)`, 'small', () => act('voteStart')), ...skip());
+    } else if (st.phase === 'result') {
+      c.append(btn('Ranking zeigen', 'primary big', () => act('ranking')));
+      sub.append(nextBtn('small'), btn('Lobby', 'small', () => act('lobby')));
+    } else if (st.phase === 'ranking') {
+      c.append(queued ? nextBtn('primary big') : btn('Finale starten', 'primary big', () => act('finale')));
+      sub.append(btn('Lobby', 'small', () => act('lobby')));
+      if (queued) sub.append(btn('Finale starten', 'small', () => act('finale')));
+    } else if (st.phase === 'finale') {
+      c.append(st.replay
+        ? btn('Zurück zum Podium', 'primary big', () => act('replay', { on: false }))
+        : btn('Sieger-Meme abspielen', 'primary big', () => act('replay')));
+      sub.append(btn('Ranking zeigen', 'small', () => act('ranking')), btn('Lobby', 'small', () => act('lobby')));
+    }
+    c.append(sub);
+  }
+
+  // ── Lautstärke ──
+  let volTimer = null, volPending = null, volLocalAt = 0;
+  function renderVolume() {
+    const s = st.settings;
+    // Während du am Regler ziehst, nicht mit (leicht veralteten) Serverwerten dazwischenfunken
+    if (volPending == null && Date.now() - volLocalAt > 500) {
+      $('vol').value = s.volume;
+      $('volVal').textContent = s.muted ? 'stumm' : s.volume + ' %';
+    }
+    $('volMute').textContent = s.muted ? 'Ton an' : 'Ton aus';
+    $('volMute').classList.toggle('sel', s.muted);
+    const p = BUSY.includes(st.phase) || st.replay ? st.current && st.current.platform : null;
+    $('volHint').textContent = p === 'tiktok' ? 'TikTok lässt sich von hier nur stumm schalten. Feinere Lautstärke: Regler im Video selbst.'
+      : p === 'instagram' ? 'Instagram lässt sich nicht fernsteuern. Lautstärke im Video selbst oder in OBS regeln.'
+      : p === 'youtube' ? 'Wirkt sofort auf das laufende Video.'
+      : 'Gilt für das laufende und alle folgenden Memes.';
+  }
+  $('vol').addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    volLocalAt = Date.now();
+    $('volVal').textContent = v + ' %';
+    volPending = v;
+    if (volTimer) return;
+    volTimer = setTimeout(() => {
+      volTimer = null;
+      const x = volPending;
+      volPending = null;
+      act('settings', st.settings.muted && x > 0 ? { volume: x, muted: false } : { volume: x });
+    }, 90);
+  });
+  $('volMute').addEventListener('click', () => act('settings', { muted: !st.settings.muted }));
+
+  function tick() {
+    if (!st) return;
+    if (st.phase === 'voting' || st.phase === 'voted') {
+      const left = st.phase === 'voting' ? Math.max(0, Math.ceil((st.voteEndsAt - (Date.now() + offset)) / 1000)) : 0;
+      $('lvTime').textContent = st.phase === 'voting' ? left + ' s' : 'Ende';
+      $('lvCount').textContent = st.votes ? st.votes.count : 0;
+      $('lvAvg').textContent = st.votes && st.votes.count ? fmt(st.votes.avg, 1) : '–';
+    }
+  }
+
+  // ── Listen ──
+  const TABS = [
+    ['pending', 'Zur Prüfung', (m) => m.status === 'pending'],
+    ['approved', 'Warteschlange', (m) => m.status === 'approved'],
+    ['played', 'Gespielt', (m) => m.status === 'played'],
+    ['out', 'Abgelehnt / übersprungen', (m) => m.status === 'rejected' || m.status === 'skipped'],
+  ];
+  function renderTabs() {
+    const counts = TABS.map(([, , f]) => st.memes.filter(f).length);
+    const s = tab + counts.join(',');
+    if (sig.tabs === s) return;
+    sig.tabs = s;
+    const box = $('tabs');
+    box.textContent = '';
+    TABS.forEach(([id, label], i) => {
+      const b = el('button', 'btn small' + (tab === id ? ' on' : ''), label);
+      b.append(el('b', '', String(counts[i])));
+      b.addEventListener('click', () => { tab = id; render(); });
+      box.append(b);
+    });
+  }
+
+  function renderList() {
+    const filter = TABS.find((t) => t[0] === tab)[2];
+    let items = st.memes.filter(filter);
+    if (tab === 'approved') items.sort((a, b) => a.order - b.order);
+    else if (tab === 'played') items.sort((a, b) => b.result.total - a.result.total);
+    else items.sort((a, b) => a.createdAt - b.createdAt);
+    const s = tab + '|' + BUSY.includes(st.phase) + '|' + items.map((m) => [m.id, m.status, m.order, m.result && m.result.total].join(':')).join(',') + '|' + [...previews].join(',');
+    if (sig.list === s) return;
+    sig.list = s;
+
+    const tb = $('toolbar');
+    tb.textContent = '';
+    if (tab === 'approved') {
+      tb.append(btn('Reihenfolge mischen', 'small', () => act('shuffle'), items.length < 2));
+      const n = el('input', 'field'); n.placeholder = 'Twitch-Name'; n.maxLength = 26;
+      const u = el('input', 'field'); u.placeholder = 'Link (Meme selbst hinzufügen)';
+      tb.append(n, u, btn('Hinzufügen', 'small', async () => { if (await act('add', { name: n.value, url: u.value })) toast('Hinzugefügt', true); }));
+    }
+
+    const box = $('list');
+    box.textContent = '';
+    if (!items.length) {
+      box.append(el('div', 'empty', { pending: 'Keine neuen Einsendungen.', approved: 'Die Warteschlange ist leer. Gib Memes unter „Zur Prüfung“ frei.', played: 'Noch nichts gespielt.', out: 'Nichts aussortiert.' }[tab]));
+      return;
+    }
+    items.forEach((m, i) => {
+      const it = el('div', 'item');
+      const line = el('div', 'line');
+      if (tab === 'approved' || tab === 'played') line.append(el('span', 'pos', String(i + 1)));
+      line.append(el('span', 'chip ' + m.platform, PLATFORM[m.platform]), el('span', 'name', '@' + m.name));
+      if (m.url) {
+        const a = el('a', 'url', m.url.replace(/^https?:\/\/(www\.)?/, ''));
+        a.href = m.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        line.append(a);
+      }
+      if (m.status === 'skipped') line.append(el('span', 'chip bad', 'Übersprungen'));
+      if (tab === 'played') {
+        line.append(el('span', 'score', fmt(m.result.total)));
+        line.append(el('span', 'meta', `${st.settings.streamerName} ${m.result.streamer} · Chat ${m.result.chatAvg == null ? '–' : fmt(m.result.chatAvg)} (${m.result.votes} Stimmen)`));
+      }
+      const acts = el('div', 'acts');
+      acts.append(btn(previews.has(m.id) ? 'Vorschau zu' : 'Vorschau', 'small ghost', () => { previews.has(m.id) ? previews.delete(m.id) : previews.add(m.id); renderList(); }));
+      if (tab === 'pending') {
+        acts.append(btn('Freigeben', 'small primary', () => { previews.delete(m.id); act('approve', { id: m.id }); }), btn('Ablehnen', 'small danger', () => { previews.delete(m.id); act('reject', { id: m.id }); }));
+      } else if (tab === 'approved') {
+        acts.append(
+          btn('↑', 'small', () => act('move', { id: m.id, dir: 'up' }), i === 0),
+          btn('↓', 'small', () => act('move', { id: m.id, dir: 'down' }), i === items.length - 1),
+          btn('Jetzt spielen', 'small primary', () => act('play', { id: m.id }), BUSY.includes(st.phase)),
+          btn('Raus', 'small danger', () => act('reject', { id: m.id })));
+      } else if (tab === 'out') {
+        acts.append(btn('Doch freigeben', 'small', () => act('approve', { id: m.id })));
+        const del = btn('Löschen', 'small danger'); confirmable(del, () => act('remove', { id: m.id })); acts.append(del);
+      } else if (tab === 'played') {
+        const del = btn('Löschen', 'small danger'); confirmable(del, () => act('remove', { id: m.id })); acts.append(del);
+      }
+      line.append(acts);
+      it.append(line);
+      if (previews.has(m.id) && EMBED_OK.test(m.embed)) {
+        const p = el('div', 'prev');
+        const f = document.createElement('iframe');
+        f.allow = 'autoplay; encrypted-media; fullscreen';
+        f.referrerPolicy = 'strict-origin-when-cross-origin';
+        f.src = m.embed.replace('autoplay=1', 'autoplay=0');
+        p.append(f); it.append(p);
+      }
+      box.append(it);
+    });
+  }
+
+  // ── Einstellungen ──
+  function fillSettings() {
+    const active = document.activeElement;
+    const s = st.settings;
+    $('sOpen').checked = s.submissionsOpen;
+    $('sAnon').checked = s.anonymous;
+    if (settingsFilled && $('settings').contains(active)) return;
+    if (!settingsFilled || !$('settings').open) {
+      $('sChannel').value = s.channel; $('sName').value = s.streamerName; $('sSecs').value = s.voteSeconds;
+      settingsFilled = true;
+    }
+  }
+  $('sOpen').addEventListener('change', (e) => act('settings', { submissionsOpen: e.target.checked }));
+  $('sAnon').addEventListener('change', (e) => act('settings', { anonymous: e.target.checked }));
+  $('sSave').addEventListener('click', async () => {
+    if (await act('settings', { channel: $('sChannel').value, streamerName: $('sName').value, voteSeconds: Number($('sSecs').value) })) toast('Gespeichert', true);
+  });
+  $('bExport').addEventListener('click', async () => {
+    const r = await fetch('/api/admin/export', { headers: { 'x-admin-key': key } });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = 'meme-master-backup.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $('bImport').addEventListener('click', () => $('fImport').click());
+  $('fImport').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const r = await fetch('/api/admin/import', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': key }, body: await file.text() });
+      const d = await r.json();
+      d.ok ? (settingsFilled = false, toast('Backup geladen', true)) : toast(d.error);
+    } catch { toast('Backup konnte nicht geladen werden.'); }
+    e.target.value = '';
+  });
+
+  // ── Zifferntasten für die eigene Wertung ──
+  addEventListener('keydown', (e) => {
+    if (!st || !BUSY.includes(st.phase) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+    if (/^[0-9]$/.test(e.key)) act('rate', { score: e.key === '0' ? 10 : Number(e.key) });
+  });
+})();
+</script>
+</body>
+</html>

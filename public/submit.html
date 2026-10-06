@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme-Master – Meme einsenden</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 1px 1px, #1c1c26 1px, transparent 0) 0 0 / 22px 22px,
+      var(--bg);
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 36px 16px 56px; }
+  .brand { font-family: var(--display); font-size: clamp(56px, 19vw, 104px); line-height: .88; text-transform: uppercase; }
+  .brand span { color: var(--acid); display: block; }
+  .tag { margin: 14px 0 26px; color: var(--muted); font-size: 17px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  label { display: block; font-weight: 700; margin: 0 0 6px; font-size: 14px; }
+  .row { margin-bottom: 16px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 6px; min-height: 19px; }
+  .hint.bad { color: var(--danger); }
+  .hint.ok { color: var(--ok); }
+  .send { width: 100%; padding: 15px; font-size: 18px; border-radius: 12px; }
+  .msg { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-weight: 500; display: none; }
+  .msg.bad { display: block; background: #2a1414; border: 1px solid #5a2622; color: #ffb0a9; }
+  ul.rules { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 10px; }
+  ul.rules li { display: flex; gap: 12px; align-items: baseline; color: var(--muted); }
+  ul.rules b { font-family: var(--display); font-weight: 400; color: var(--acid); font-size: 20px; min-width: 22px; }
+  ul.rules strong { color: var(--ink); }
+  .status { text-align: center; }
+  .status h2 { font-size: 40px; margin: 6px 0 10px; }
+  .status p { margin: 6px 0; color: var(--muted); }
+  .status .big { font-family: var(--display); font-size: 84px; color: var(--acid); line-height: 1; margin: 14px 0 4px; }
+  .live { margin-top: 26px; text-align: center; color: var(--muted); font-size: 14px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">Meme<span>Master</span></div>
+  <p class="tag">Schick dein bestes Meme. <span id="streamer">Der Streamer</span> und der Chat bewerten es live von 1 bis 10.</p>
+
+  <section class="card" id="formCard" hidden>
+    <form id="form" novalidate>
+      <div class="row">
+        <label for="name">Dein Twitch-Name</label>
+        <input class="field" id="name" name="name" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="26" placeholder="z. B. memelord_42" required>
+      </div>
+      <div class="row">
+        <label for="url">Link zum Meme</label>
+        <input class="field" id="url" name="url" type="url" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://www.tiktok.com/@…/video/…" required>
+        <div class="hint" id="urlHint">TikTok, YouTube Shorts oder Instagram Reels</div>
+      </div>
+      <button class="btn primary send" id="send" type="submit">Meme einsenden</button>
+      <div class="msg" id="msg" role="alert"></div>
+    </form>
+    <ul class="rules">
+      <li><b>1</b><span><strong>Maximal 1 Minute.</strong> Längere Videos fliegen raus.</span></li>
+      <li><b>2</b><span><strong>Nur TikTok, YouTube Shorts, Insta Reels.</strong> Das Video muss öffentlich sein.</span></li>
+      <li><b>3</b><span><strong>Ein Meme pro Person.</strong> Wähl weise.</span></li>
+      <li><b>4</b><span><strong>Wird vorher geprüft.</strong> Nichts, was gegen die Twitch-Regeln verstößt.</span></li>
+    </ul>
+  </section>
+
+  <section class="card status" id="closedCard" hidden>
+    <span class="chip warn">Geschlossen</span>
+    <h2>Einsendungen zu</h2>
+    <p>Gerade werden keine Memes mehr angenommen. Schau im Stream vorbei und vote mit!</p>
+  </section>
+
+  <section class="card status" id="statusCard" hidden>
+    <span class="chip" id="stChip"></span>
+    <h2 id="stTitle"></h2>
+    <p id="stText"></p>
+    <div class="big num" id="stBig" hidden></div>
+    <p id="stSub" hidden></p>
+  </section>
+
+  <p class="live" id="live"></p>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let token = '';
+  try {
+    token = localStorage.getItem('mm_token') || '';
+    if (!/^[a-f0-9]{32}$/.test(token)) {
+      token = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('mm_token', token);
+    }
+  } catch {
+    token = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  const PLATFORM = { tiktok: 'TikTok', youtube: 'YouTube Short', instagram: 'Insta Reel' };
+
+  function detect(v) {
+    v = v.trim();
+    if (!v) return null;
+    if (/tiktok\.com\//i.test(v)) return /\/photo\//i.test(v) ? { bad: 'TikTok-Fotos gehen nicht – nur Videos.' } : { ok: 'TikTok erkannt' };
+    if (/youtube\.com\/shorts\/[\w-]{11}/i.test(v)) return { ok: 'YouTube Short erkannt' };
+    if (/youtu\.?be/i.test(v)) return { bad: 'Nur Shorts: youtube.com/shorts/…' };
+    if (/instagram\.com\/(?:[^/]+\/)?reels?\/[\w-]+/i.test(v)) return { ok: 'Insta Reel erkannt' };
+    if (/instagram\.com/i.test(v)) return { bad: 'Nur Reels: instagram.com/reel/…' };
+    return { bad: 'Erlaubt sind nur TikTok, YouTube Shorts und Insta Reels.' };
+  }
+
+  $('url').addEventListener('input', () => {
+    const d = detect($('url').value);
+    const h = $('urlHint');
+    h.className = 'hint' + (d ? (d.ok ? ' ok' : ' bad') : '');
+    h.textContent = d ? (d.ok || d.bad) : 'TikTok, YouTube Shorts oder Instagram Reels';
+  });
+
+  function showStatus(m) {
+    const map = {
+      pending: ['warn', 'Wird geprüft', 'Eingereicht!', 'Dein Meme wartet auf die Freigabe. Bleib im Stream – diese Seite aktualisiert sich von selbst.'],
+      approved: ['ok', 'Freigegeben', 'Du bist dabei!', 'Dein Meme ist in der Show. Gleich wird es bewertet.'],
+      live: ['ok', 'Jetzt live', 'Dein Meme läuft!', 'Ab in den Stream – gerade wird dein Meme bewertet.'],
+      played: ['ok', 'Bewertet', 'Dein Ergebnis', ''],
+      skipped: ['bad', 'Übersprungen', 'Leider übersprungen', 'Dein Meme konnte nicht abgespielt werden.'],
+      rejected: ['bad', 'Abgelehnt', 'Nicht angenommen', 'Dein Meme wurde nicht freigegeben. Du kannst ein anderes einsenden.'],
+    };
+    const [cls, chip, title, text] = map[m.status] || map.pending;
+    $('stChip').className = 'chip ' + cls;
+    $('stChip').textContent = chip;
+    $('stTitle').textContent = title;
+    $('stText').textContent = text || `@${m.name} · ${PLATFORM[m.platform] || ''}`;
+    const played = m.status === 'played' && m.total != null;
+    $('stBig').hidden = !played;
+    $('stSub').hidden = !played;
+    if (played) {
+      $('stBig').textContent = m.total.toFixed(2).replace('.', ',');
+      $('stSub').textContent = m.rank ? `Aktuell Platz ${m.rank} von ${m.of}` : '';
+    }
+  }
+
+  async function refresh() {
+    try {
+      const r = await fetch('/api/my?token=' + token, { cache: 'no-store' });
+      const d = await r.json();
+      const m = d.meme;
+      const canSubmit = !m || m.status === 'rejected';
+      $('statusCard').hidden = !m;
+      if (m) showStatus(m);
+      $('formCard').hidden = !(canSubmit && d.open);
+      $('closedCard').hidden = !(canSubmit && !d.open && !m);
+    } catch {}
+  }
+
+  async function info() {
+    try {
+      const s = await (await fetch('/api/state', { cache: 'no-store' })).json();
+      $('streamer').textContent = s.settings.streamerName;
+      $('live').textContent = s.counts.submitted
+        ? `${s.counts.submitted} ${s.counts.submitted === 1 ? 'Meme' : 'Memes'} eingereicht · twitch.tv/${s.settings.channel}`
+        : `twitch.tv/${s.settings.channel}`;
+    } catch {}
+  }
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('msg');
+    msg.className = 'msg';
+    const btn = $('send');
+    btn.disabled = true;
+    btn.textContent = 'Wird geprüft …';
+    try {
+      const r = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: $('name').value, url: $('url').value, token }),
+      });
+      const d = await r.json();
+      if (!d.ok) { msg.textContent = d.error; msg.className = 'msg bad'; }
+      else { $('form').reset(); await refresh(); info(); }
+    } catch {
+      msg.textContent = 'Keine Verbindung. Versuch es nochmal.';
+      msg.className = 'msg bad';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Meme einsenden';
+  });
+
+  refresh(); info();
+  setInterval(() => { if (!document.hidden) { refresh(); info(); } }, 8000);
+})();
+</script>
+</body>
+</html>

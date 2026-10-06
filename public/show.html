@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme-Master – Show</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+  html, body { height: 100%; overflow: hidden; background: #000; }
+  #fit { position: absolute; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(212,255,63,.10), transparent 60%),
+      radial-gradient(circle at 2px 2px, #1b1b25 2px, transparent 0) 0 0 / 34px 34px,
+      var(--bg);
+  }
+  .top { position: absolute; left: 96px; right: 96px; top: 34px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
+  .logo { font-family: var(--display); font-size: 40px; text-transform: uppercase; letter-spacing: .02em; }
+  .logo span { color: var(--acid); }
+  .chan { font-size: 24px; font-weight: 700; color: var(--muted); }
+
+  .view { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .45s, visibility 0s .45s; }
+  .view.on { opacity: 1; visibility: visible; transition: opacity .45s; }
+
+  /* ── Lobby ── */
+  #vLobby .hero { position: absolute; left: 96px; top: 190px; font-family: var(--display); font-size: 300px; line-height: .93; text-transform: uppercase; }
+  #vLobby .hero > span { display: block; color: var(--acid); }
+  #vLobby .hero small b { color: var(--ink); font-weight: 700; }
+  #vLobby .hero small { display: block; font-family: var(--body); font-size: 34px; font-weight: 500; color: var(--muted); text-transform: none; line-height: 1.3; margin-top: 44px; max-width: 800px; }
+  .join { position: absolute; right: 96px; top: 190px; width: 760px; background: var(--panel); border: 2px solid var(--line); border-radius: 36px; padding: 48px; }
+  .join h2 { font-size: 64px; }
+  .join .url { margin: 26px 0 30px; background: var(--acid); color: var(--acid-ink); border-radius: 20px; padding: 26px 28px; font-weight: 700; font-size: 52px; line-height: 1.1; word-break: break-all; }
+  .join.closed .url { background: var(--panel-2); color: var(--muted); }
+  .join ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; font-size: 30px; color: var(--muted); }
+  .join ul b { color: var(--ink); }
+  .join .count { margin-top: 34px; padding-top: 30px; border-top: 2px solid var(--line); display: flex; align-items: baseline; gap: 18px; font-size: 30px; color: var(--muted); }
+  .join .count strong { font-family: var(--display); font-weight: 400; font-size: 84px; color: var(--ink); line-height: 1; }
+  .leader { position: absolute; left: 96px; bottom: 70px; font-size: 30px; color: var(--muted); }
+  .leader b { color: var(--ink); }
+
+  /* ── Meme läuft / Voting ── */
+  .phone { position: absolute; left: 96px; top: 112px; width: 500px; height: 889px; border-radius: 34px; background: #000; border: 3px solid var(--line); overflow: hidden; box-shadow: 0 0 0 10px #111118, 0 30px 90px rgba(0,0,0,.6); }
+  .phone iframe { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+  .phone[data-platform="instagram"] { background: #fff; }
+  .side { position: absolute; left: 690px; right: 96px; top: 112px; height: 889px; display: flex; flex-direction: column; }
+  .kicker { font-size: 28px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--acid); }
+  .memeNo { font-family: var(--display); font-size: 150px; line-height: .95; text-transform: uppercase; margin-top: 6px; }
+  .by { font-size: 38px; font-weight: 700; margin-top: 10px; }
+  .by .who { color: var(--pink); }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; }
+  .block { display: none; }
+  #stage[data-phase="playing"] .block.playing,
+  #stage[data-phase="voting"] .block.vote,
+  #stage[data-phase="voted"] .block.vote,
+  #stage[data-phase="finale"] .block.winner { display: block; }
+  #stage[data-phase="finale"] .side .std { display: none; }
+
+  .watch { font-family: var(--display); font-size: 96px; line-height: 1; }
+  .watch small { font-family: var(--body); font-size: 32px; font-weight: 500; color: var(--muted); margin-left: 16px; }
+  .watch.over { color: var(--danger); }
+  .track { height: 14px; border-radius: 7px; background: var(--panel-2); margin: 22px 0 34px; overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 7px; }
+  .watch.over + .track i { background: var(--danger); }
+  .cta { font-size: 40px; font-weight: 700; padding: 26px 32px; border-radius: 22px; background: var(--panel); border: 2px solid var(--line); }
+  .cta b { color: var(--acid); }
+
+  .voteHead { display: flex; align-items: center; gap: 40px; margin-bottom: 30px; }
+  .ring { position: relative; width: 220px; height: 220px; flex: none; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 16; }
+  .ring .bgc { stroke: var(--panel-2); }
+  .ring .fg { stroke: var(--acid); stroke-linecap: round; transition: stroke-dashoffset .12s linear; }
+  .ring .t { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 104px; }
+  .ring.low .fg { stroke: var(--pink); }
+  .ring.done .t { font-size: 46px; color: var(--muted); }
+  .voteCta h3 { font-size: 78px; }
+  .voteCta h3 em { font-style: normal; color: var(--acid); }
+  .voteCta p { margin: 12px 0 0; font-size: 32px; color: var(--muted); }
+  .voteCta p b { color: var(--ink); }
+  .hist { display: grid; grid-template-columns: repeat(10, 1fr); gap: 14px; align-items: end; height: 270px; padding: 0 4px; }
+  .hist .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .hist .n { font-size: 24px; font-weight: 700; color: var(--muted); height: 34px; }
+  .hist .bar { width: 100%; background: var(--acid); border-radius: 8px 8px 0 0; height: 4px; min-height: 4px; transition: height .35s cubic-bezier(.2,.8,.2,1); }
+  .hist .lab { font-family: var(--display); font-size: 40px; margin-top: 10px; border-top: 3px solid var(--line); width: 100%; text-align: center; padding-top: 8px; }
+  .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 20px; }
+  .rated { font-size: 28px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .rated i { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .rated.yes { color: var(--ok); }
+  .rated.yes i { background: var(--ok); }
+  .dur { font-size: 24px; color: var(--muted); }
+  .dur.over { color: var(--danger); font-weight: 700; }
+
+  .winner .crownbig { width: 120px; height: 90px; color: var(--gold); }
+  .winner .score { font-family: var(--display); font-size: 240px; line-height: 1.08; color: var(--gold); }
+  .winner .memeNo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 14px; line-height: 1.2; }
+  #stage[data-phase="finale"] .body { justify-content: center; }
+  .winner p { font-size: 34px; color: var(--muted); margin: 10px 0 0; }
+
+  /* ── Auflösung ── */
+  #vResult .head { position: absolute; left: 0; right: 0; top: 150px; text-align: center; }
+  #vResult .head h2 { font-size: 120px; }
+  #vResult .head p { font-size: 44px; font-weight: 700; margin: 12px 0 0; }
+  #vResult .head p span { color: var(--pink); }
+  .tiles { position: absolute; left: 96px; right: 96px; top: 420px; display: flex; align-items: center; justify-content: center; gap: 36px; }
+  .tile { width: 400px; height: 400px; border-radius: 40px; background: var(--panel); border: 2px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: translateY(40px) scale(.94); transition: opacity .5s, transform .5s cubic-bezier(.2,1.2,.3,1); }
+  .tile.in { opacity: 1; transform: none; }
+  .tile .lab { font-size: 30px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .tile .val { font-family: var(--display); font-size: 190px; line-height: 1.05; }
+  .tile .sub { font-size: 26px; color: var(--muted); min-height: 36px; }
+  .tile.total { width: 520px; height: 480px; background: var(--acid); border-color: var(--acid); color: var(--acid-ink); }
+  .tile.total .lab, .tile.total .sub { color: var(--acid-ink); }
+  .tile.total .val { font-size: 250px; }
+  .op { font-family: var(--display); font-size: 110px; color: var(--muted); opacity: 0; transition: opacity .4s; }
+  .op.in { opacity: 1; }
+  .place { position: absolute; left: 0; right: 0; top: 940px; text-align: center; font-size: 44px; font-weight: 700; opacity: 0; transform: translateY(16px); transition: opacity .5s, transform .5s; }
+  .place.in { opacity: 1; transform: none; }
+  .place b { font-family: var(--display); font-weight: 400; font-size: 60px; color: var(--pink); margin-left: 10px; }
+
+  /* ── Ranking ── */
+  #vRanking .head { position: absolute; left: 96px; right: 96px; top: 108px; display: flex; align-items: baseline; justify-content: space-between; }
+  #vRanking .head h2 { font-size: 120px; }
+  #vRanking .head p { font-size: 30px; color: var(--muted); margin: 0; }
+  #rows { position: absolute; left: 96px; right: 96px; top: 258px; height: 770px; }
+  .row { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--rh, 76px) - 8px); display: grid; grid-template-columns: 96px 380px 1fr 170px; align-items: center; transition: transform .9s cubic-bezier(.3,1.25,.4,1), opacity .5s; }
+  .row.hide { opacity: 0; }
+  .row .rk { font-family: var(--display); font-size: 52px; color: var(--muted); }
+  .row .nm { font-size: 34px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; display: flex; align-items: center; gap: 12px; }
+  .row .nm svg { width: 40px; height: 30px; color: var(--gold); flex: none; display: none; }
+  .row.lead .nm svg { display: block; }
+  .row.lead .rk { color: var(--gold); }
+  .row .tr { height: calc(var(--rh, 76px) * .58); border-radius: 6px; background: rgba(255,255,255,.04); overflow: hidden; }
+  .row .tr i { display: block; height: 100%; width: 0; background: var(--bar); border-radius: 0 6px 6px 0; transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
+  .row.new .tr i { background: var(--acid); }
+  .row .vl { font-family: var(--display); font-size: 52px; text-align: right; }
+  .row .tag { font-size: 18px; font-weight: 700; letter-spacing: .1em; background: var(--acid); color: var(--acid-ink); border-radius: 6px; padding: 2px 8px; flex: none; }
+
+  /* ── Finale ── */
+  #vFinale .head { position: absolute; left: 0; right: 0; top: 120px; text-align: center; }
+  #vFinale .head h2 { font-size: 130px; }
+  #vFinale .head h2 span { color: var(--acid); }
+  .podium { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; display: flex; justify-content: center; align-items: flex-end; gap: 28px; }
+  .pod { width: 430px; display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(80px); transition: opacity .7s, transform .9s cubic-bezier(.2,1.3,.3,1); }
+  .pod.in { opacity: 1; transform: none; }
+  .pod .crown { width: 110px; height: 82px; color: var(--gold); margin-bottom: 6px; }
+  .pod .pn { font-size: 40px; font-weight: 700; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pod .ps { font-family: var(--display); font-size: 84px; line-height: 1.1; margin-bottom: 16px; }
+  .pod .ps small { font-family: var(--body); font-size: 24px; font-weight: 500; color: var(--muted); margin-left: 10px; }
+  .pod .blk { width: 100%; background: var(--panel); border: 2px solid var(--line); border-bottom: 0; border-radius: 26px 26px 0 0; display: grid; place-items: center; font-family: var(--display); font-size: 150px; color: var(--muted); }
+  .pod.p1 .blk { height: 380px; background: var(--gold); border-color: var(--gold); color: #2a1d00; font-size: 220px; }
+  .pod.p2 .blk { height: 270px; }
+  .pod.p3 .blk { height: 190px; font-size: 120px; }
+  .pod.p1 .pn { font-size: 54px; }
+  .pod.p1 .ps { font-size: 120px; color: var(--gold); }
+  #confetti { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 8; }
+
+  #sound { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; background: var(--pink); color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 999px; cursor: pointer; border: 0; }
+  #offline { position: fixed; right: 14px; top: 12px; z-index: 20; background: var(--danger); color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="fit">
+  <div id="stage" data-phase="lobby">
+    <div class="top">
+      <div class="logo">Meme<span>Master</span></div>
+      <div class="chan" id="chan"></div>
+    </div>
+
+    <!-- Lobby -->
+    <section class="view on" id="vLobby">
+      <div class="hero">Meme<span>Master</span><small>Dein Meme gegen alle anderen. <b id="lobStreamer">Der Streamer</b> und der Chat bewerten von 1 bis 10.</small></div>
+      <div class="join" id="join">
+        <h2 id="joinTitle">Schick dein Meme</h2>
+        <div class="url" id="joinUrl"></div>
+        <ul>
+          <li><b>TikTok</b>, <b>YouTube Shorts</b> oder <b>Insta Reels</b></li>
+          <li>Maximal <b>1 Minute</b></li>
+          <li><b>1 Meme</b> pro Person</li>
+        </ul>
+        <div class="count"><strong class="num" id="lobCount">0</strong><span id="lobCountLabel">Memes eingereicht</span></div>
+      </div>
+      <div class="leader" id="leader" hidden></div>
+    </section>
+
+    <!-- Meme läuft / Voting / Sieger-Wiederholung -->
+    <section class="view" id="vPlay">
+      <div class="phone" id="phone"><div id="frame" style="width:100%;height:100%"></div></div>
+      <div class="side">
+        <div class="std">
+          <div class="kicker" id="kicker">Jetzt läuft</div>
+          <div class="memeNo">Meme <span class="num" id="memeNo">#1</span></div>
+          <div class="by" id="by"></div>
+        </div>
+        <div class="body">
+          <div class="block playing">
+            <div class="watch" id="watch"><span class="num" id="watchT">0:00</span><small>von max. 1:00</small></div>
+            <div class="track"><i id="watchBar"></i></div>
+            <div class="cta">Gleich wird gevotet: <b>Zahl von 1 bis 10</b> in den Chat.</div>
+          </div>
+
+          <div class="block vote">
+            <div class="voteHead">
+              <div class="ring" id="ring">
+                <svg viewBox="0 0 220 220"><circle class="bgc" cx="110" cy="110" r="100"/><circle class="fg" id="ringFg" cx="110" cy="110" r="100"/></svg>
+                <div class="t num" id="ringT">60</div>
+              </div>
+              <div class="voteCta">
+                <h3 id="voteTitle">Schreib <em>1–10</em> in den Chat</h3>
+                <p><b class="num" id="vCount">0</b> <span id="vCountLabel">Stimmen</span> · Ø <b class="num" id="vAvg">–</b></p>
+              </div>
+            </div>
+            <div class="hist" id="hist"></div>
+          </div>
+
+          <div class="block winner">
+            <svg class="crownbig" viewBox="0 0 110 82"><path fill="currentColor" d="M6 72h98l6-52-28 22L55 4 28 42 0 20z"/><rect fill="currentColor" x="6" y="74" width="98" height="8" rx="2"/></svg>
+            <div class="kicker" style="color:var(--gold)">Das Sieger-Meme</div>
+            <div class="memeNo" id="winName" style="font-size:120px"></div>
+            <div class="score num" id="winScore"></div>
+            <p>Punkte im Gesamt-Ranking</p>
+          </div>
+
+          <div class="std foot">
+            <div class="rated" id="rated"><i></i><span id="ratedT"></span></div>
+            <div class="dur" id="dur"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Auflösung -->
+    <section class="view" id="vResult">
+      <div class="head"><h2 id="resTitle">Meme #1</h2><p>eingeschickt von <span id="resName"></span></p></div>
+      <div class="tiles">
+        <div class="tile" id="tS"><div class="lab" id="tSLab">Streamer</div><div class="val num" id="tSVal">0</div><div class="sub">von 10</div></div>
+        <div class="op" id="op1">+</div>
+        <div class="tile" id="tC"><div class="lab">Chat</div><div class="val num" id="tCVal">0</div><div class="sub" id="tCSub"></div></div>
+        <div class="op" id="op2">=</div>
+        <div class="tile total" id="tT"><div class="lab">Gesamt</div><div class="val num" id="tTVal">0</div><div class="sub">50 % <span id="tTWho"></span> · 50 % Chat</div></div>
+      </div>
+      <div class="place" id="place"></div>
+    </section>
+
+    <!-- Ranking -->
+    <section class="view" id="vRanking">
+      <div class="head"><h2>Ranking</h2><p id="rankSub"></p></div>
+      <div id="rows"></div>
+    </section>
+
+    <!-- Finale -->
+    <section class="view" id="vFinale">
+      <div class="head"><h2>Der <span>Meme-Master</span></h2></div>
+      <div class="podium" id="podium"></div>
+    </section>
+
+    <canvas id="confetti" width="1920" height="1080"></canvas>
+  </div>
+</div>
+<button id="sound" hidden>Einmal klicken, damit Videos mit Ton starten</button>
+<div id="offline" hidden>Verbindung getrennt …</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const S = { st: null, offset: 0, keys: {}, videoKey: null, duration: null, timers: {}, activated: false };
+  const CROWN = '<svg viewBox="0 0 110 82"><path fill="currentColor" d="M6 72h98l6-52-28 22L55 4 28 42 0 20z"/><rect fill="currentColor" x="6" y="74" width="98" height="8" rx="2"/></svg>';
+  const EMBED_OK = /^https:\/\/www\.(youtube\.com\/embed\/|tiktok\.com\/player\/v1\/|instagram\.com\/reel\/)/;
+  const fmt = (n, d = 2) => Number(n).toFixed(d).replace('.', ',');
+  const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const now = () => Date.now() + S.offset;
+
+  // ── Skalierung auf Fenstergröße (Bühne ist immer 1920×1080) ──
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    const f = $('fit');
+    f.style.transform = `scale(${s})`;
+    f.style.left = (innerWidth - 1920 * s) / 2 + 'px';
+    f.style.top = (innerHeight - 1080 * s) / 2 + 'px';
+  }
+  addEventListener('resize', fit); fit();
+
+  // ── Zeitgesteuerte Abläufe pro Ansicht ──
+  function seq(name) {
+    (S.timers[name] || []).forEach(clearTimeout);
+    S.timers[name] = [];
+    return (ms, fn) => S.timers[name].push(setTimeout(fn, ms));
+  }
+  function countUp(el, to, ms, decimals) {
+    const t0 = performance.now();
+    (function step(t) {
+      const p = Math.min(1, (t - t0) / ms);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(to * e, decimals);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  // ── Histogramm aufbauen ──
+  const hist = $('hist');
+  for (let i = 1; i <= 10; i++) {
+    const c = document.createElement('div');
+    c.className = 'col';
+    c.innerHTML = '<div class="n num"></div><div class="bar"></div><div class="lab">' + i + '</div>';
+    hist.appendChild(c);
+  }
+  function drawHist(h) {
+    const max = Math.max(1, ...h);
+    [...hist.children].forEach((c, i) => {
+      c.children[0].textContent = h[i] || '';
+      c.children[1].style.height = (h[i] ? Math.max(6, (h[i] / max) * 170) : 4) + 'px';
+    });
+  }
+
+  // ── Video ──
+  function setVideo(cur, key) {
+    S.videoKey = key;
+    S.duration = null;
+    S.platform = cur ? cur.platform : null;
+    S.volSynced = false;
+    const frame = $('frame');
+    frame.textContent = '';
+    if (!cur || !EMBED_OK.test(cur.embed)) return;
+    $('phone').dataset.platform = cur.platform;
+    const f = document.createElement('iframe');
+    f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.title = 'Meme';
+    f.addEventListener('load', () => {
+      if (cur.platform === 'youtube') {
+        try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'mm', channel: 'widget' }), 'https://www.youtube.com'); } catch {}
+      }
+      sendVolume();
+    });
+    f.src = cur.embed;
+    frame.appendChild(f);
+  }
+  // ── Lautstärke aus der Regie an den Player weitergeben ──
+  // YouTube: stufenlos. TikTok: der Player kennt von außen nur Ton an/aus. Instagram: nicht steuerbar.
+  let volSentAt = 0;
+  function sendVolume() {
+    const st = S.st;
+    const f = $('frame').querySelector('iframe');
+    if (!st || !f || !f.contentWindow) return;
+    const vol = st.settings.volume;
+    const muted = st.settings.muted || vol === 0;
+    volSentAt = Date.now();
+    try {
+      if (S.platform === 'youtube') {
+        const cmd = (func, args) => f.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: args || [] }), 'https://www.youtube.com');
+        cmd('setVolume', [vol]);
+        cmd(muted ? 'mute' : 'unMute');
+      } else if (S.platform === 'tiktok') {
+        f.contentWindow.postMessage({ 'x-tiktok-player': true, type: muted ? 'mute' : 'unMute', value: undefined }, 'https://www.tiktok.com');
+      }
+    } catch {}
+  }
+
+  // Rückmeldungen der Player: Videolänge (YouTube, TikTok) und Bereitschaft für die Lautstärke
+  addEventListener('message', (e) => {
+    try {
+      if (e.origin === 'https://www.youtube.com') {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (!d) return;
+        if (d.info && d.info.duration > 0) S.duration = d.info.duration;
+        if (d.event === 'onReady' || d.event === 'initialDelivery') sendVolume();
+        // Solange der Player die gewünschte Lautstärke noch nicht bestätigt hat, nachfassen
+        if (d.info && typeof d.info.volume === 'number' && S.st && !S.volSynced) {
+          if (d.info.volume === S.st.settings.volume) S.volSynced = true;
+          else if (Date.now() - volSentAt > 400) sendVolume();
+        }
+      } else if (e.origin === 'https://www.tiktok.com') {
+        const d = e.data;
+        if (!d || !d['x-tiktok-player']) return;
+        if (d.type === 'onCurrentTime' && d.value && d.value.duration > 0) S.duration = d.value.duration;
+        if (d.type === 'onPlayerReady') sendVolume();
+      }
+    } catch {}
+  });
+
+  // ── Ansichten ──
+  function renderLobby(st) {
+    const open = st.settings.submissionsOpen;
+    $('join').classList.toggle('closed', !open);
+    $('joinTitle').textContent = open ? 'Schick dein Meme' : 'Einsendungen zu';
+    const url = $('joinUrl');
+    url.textContent = open ? location.host : 'Gleich geht’s los';
+    url.style.fontSize = (open && location.host.length > 24 ? (location.host.length > 34 ? 34 : 42) : 52) + 'px';
+    $('lobCount').textContent = st.counts.submitted;
+    $('lobCountLabel').textContent = st.counts.submitted === 1 ? 'Meme eingereicht' : 'Memes eingereicht';
+    $('lobStreamer').textContent = st.settings.streamerName;
+    const lead = st.ranking[0];
+    $('leader').hidden = !lead;
+    if (lead) {
+      $('leader').textContent = '';
+      $('leader').append('Aktuell vorne: ');
+      const b = document.createElement('b');
+      b.textContent = `@${lead.name}`;
+      $('leader').append(b, ` mit ${fmt(lead.total)} Punkten`);
+    }
+  }
+
+  function renderPlay(st) {
+    const cur = st.current;
+    if (!cur) return;
+    if (st.phase === 'finale') {
+      const w = st.ranking[0];
+      $('winName').textContent = '@' + cur.name;
+      $('winScore').textContent = w ? fmt(w.total) : '';
+      return;
+    }
+    $('kicker').textContent = st.phase === 'playing' ? 'Jetzt läuft' : st.phase === 'voting' ? 'Voting läuft' : 'Voting beendet';
+    $('memeNo').textContent = '#' + cur.number;
+    const by = $('by');
+    by.textContent = '';
+    by.append('von ');
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = cur.name ? '@' + cur.name : '???';
+    by.append(who);
+    if (st.votes) {
+      drawHist(st.votes.hist);
+      $('vCount').textContent = st.votes.count;
+      $('vCountLabel').textContent = st.votes.count === 1 ? 'Stimme' : 'Stimmen';
+      $('vAvg').textContent = st.votes.count ? fmt(st.votes.avg, 1) : '–';
+    }
+    $('voteTitle').innerHTML = st.phase === 'voting' ? 'Schreib <em>1–10</em> in den Chat' : 'Der Chat hat <em>gevotet</em>';
+    $('rated').classList.toggle('yes', st.streamerRated);
+    $('ratedT').textContent = st.streamerRated ? `${st.settings.streamerName} hat bewertet` : `${st.settings.streamerName} überlegt noch …`;
+  }
+
+  function renderResult(st) {
+    const cur = st.current;
+    if (!cur || !cur.result) return;
+    if (S.keys.result === cur.id) return;
+    S.keys.result = cur.id;
+    const r = cur.result;
+    const at = seq('result');
+    ['tS', 'tC', 'tT', 'op1', 'op2', 'place'].forEach((id) => $(id).classList.remove('in'));
+    $('resTitle').textContent = 'Meme #' + cur.number;
+    $('resName').textContent = '@' + cur.name;
+    $('tSLab').textContent = st.settings.streamerName;
+    $('tTWho').textContent = st.settings.streamerName;
+    $('tSVal').textContent = '0';
+    $('tCVal').textContent = r.votes ? '0,00' : '–';
+    $('tTVal').textContent = '0,00';
+    $('tCSub').textContent = r.votes ? `${r.votes} ${r.votes === 1 ? 'Stimme' : 'Stimmen'}` : 'keine Stimmen';
+    at(350, () => { $('tS').classList.add('in'); countUp($('tSVal'), r.streamer, 700, 0); });
+    at(1500, () => { $('op1').classList.add('in'); $('tC').classList.add('in'); if (r.votes) countUp($('tCVal'), r.chatAvg, 900, 2); });
+    at(2900, () => { $('op2').classList.add('in'); $('tT').classList.add('in'); countUp($('tTVal'), r.total, 1300, 2); });
+    at(4500, () => {
+      const pos = st.ranking.find((x) => x.id === cur.id);
+      if (!pos) return;
+      const p = $('place');
+      p.textContent = st.ranking.length > 1 ? 'Damit aktuell auf' : 'Das erste Meme setzt die Marke:';
+      const b = document.createElement('b');
+      b.textContent = 'Platz ' + pos.rank;
+      p.append(b);
+      p.classList.add('in');
+    });
+  }
+
+  function renderRanking(st) {
+    const all = st.ranking;
+    const key = st.latestId + ':' + all.length;
+    if (S.keys.ranking === key) return;
+    S.keys.ranking = key;
+    const at = seq('ranking');
+    const box = $('rows');
+    box.textContent = '';
+    $('rankSub').textContent = `Stand nach ${all.length} ${all.length === 1 ? 'Meme' : 'Memes'} · 50 % ${st.settings.streamerName}, 50 % Chat`;
+    const latest = all.find((r) => r.id === st.latestId) || null;
+    const disp = all.slice(0, 10);
+    if (latest && !disp.includes(latest)) disp[9] = latest;
+    const prev = disp.filter((r) => r !== latest);
+    const ROW_H = Math.min(118, Math.floor(770 / Math.max(disp.length, 1)));
+    box.style.setProperty('--rh', ROW_H + 'px');
+    const els = new Map();
+    const place = (el, i) => { el.style.transform = `translateY(${i * ROW_H}px)`; };
+
+    disp.forEach((r) => {
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML = '<div class="rk num"></div><div class="nm">' + CROWN + '<span></span></div><div class="tr"><i></i></div><div class="vl num"></div>';
+      el.querySelector('.nm span').textContent = '@' + r.name;
+      const isNew = r === latest;
+      const oldRank = r.rank - (latest && latest.rank < r.rank ? 1 : 0);
+      if (isNew) {
+        el.classList.add('new', 'hide');
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = 'NEU';
+        el.querySelector('.nm').append(tag);
+        el.querySelector('.rk').textContent = '';
+        el.querySelector('.vl').textContent = '0,00';
+        place(el, prev.length);
+      } else {
+        el.querySelector('.rk').textContent = oldRank;
+        el.querySelector('.vl').textContent = fmt(r.total);
+        el.classList.toggle('lead', oldRank === 1);
+        place(el, prev.indexOf(r));
+      }
+      box.appendChild(el);
+      els.set(r, el);
+    });
+
+    // 1) bisheriger Stand fährt ein
+    at(80, () => prev.forEach((r) => { els.get(r).querySelector('.tr i').style.width = r.total * 10 + '%'; }));
+    if (!latest) return;
+    // 2) neues Meme erscheint unten, Balken wächst
+    at(1300, () => {
+      const el = els.get(latest);
+      el.classList.remove('hide');
+      el.querySelector('.tr i').style.width = latest.total * 10 + '%';
+      countUp(el.querySelector('.vl'), latest.total, 1100, 2);
+    });
+    // 3) alles sortiert sich neu
+    at(3000, () => disp.forEach((r, i) => {
+      const el = els.get(r);
+      place(el, i);
+      el.querySelector('.rk').textContent = r.rank;
+      el.classList.toggle('lead', r.rank === 1);
+    }));
+  }
+
+  function renderFinale(st) {
+    if (S.keys.finale) return;
+    S.keys.finale = true;
+    const at = seq('finale');
+    const top = st.ranking.slice(0, 3);
+    const box = $('podium');
+    box.textContent = '';
+    const order = [top[1], top[0], top[2]]; // links Platz 2, Mitte Platz 1, rechts Platz 3
+    const pods = {};
+    order.forEach((r) => {
+      if (!r) return;
+      const el = document.createElement('div');
+      el.className = 'pod p' + r.rank;
+      el.innerHTML = (r.rank === 1 ? '<div class="crown">' + CROWN + '</div>' : '') +
+        '<div class="pn"></div><div class="ps num"></div><div class="blk">' + r.rank + '</div>';
+      el.querySelector('.pn').textContent = '@' + r.name;
+      el.querySelector('.ps').textContent = fmt(r.total);
+      box.appendChild(el);
+      pods[r.rank] = el;
+    });
+    let t = 900;
+    if (pods[3]) { at(t, () => pods[3].classList.add('in')); t += 2000; }
+    if (pods[2]) { at(t, () => pods[2].classList.add('in')); t += 2600; }
+    at(t, () => { pods[1].classList.add('in'); confetti(); });
+  }
+
+  // ── Konfetti ──
+  let confRaf = 0;
+  function confetti() {
+    const cv = $('confetti');
+    const cx = cv.getContext('2d');
+    const colors = ['#d4ff3f', '#ff4d8d', '#ffc93c', '#f5f2e8'];
+    const ps = Array.from({ length: 220 }, () => ({
+      x: 960 + (Math.random() - 0.5) * 500, y: 420 + Math.random() * 80,
+      vx: (Math.random() - 0.5) * 34, vy: -Math.random() * 30 - 8,
+      w: 10 + Math.random() * 14, h: 6 + Math.random() * 10,
+      r: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.5, c: colors[Math.floor(Math.random() * colors.length)],
+    }));
+    const t0 = performance.now();
+    cancelAnimationFrame(confRaf);
+    (function frame(t) {
+      cx.clearRect(0, 0, 1920, 1080);
+      const age = t - t0;
+      ps.forEach((p) => {
+        p.vy += 0.55; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r);
+        cx.globalAlpha = Math.max(0, 1 - Math.max(0, age - 4200) / 1500);
+        cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore();
+      });
+      if (age < 5800) confRaf = requestAnimationFrame(frame);
+      else cx.clearRect(0, 0, 1920, 1080);
+    })(t0);
+  }
+
+  // ── Hauptdarstellung ──
+  function render() {
+    const st = S.st;
+    if (!st) return;
+    stage.dataset.phase = st.phase;
+    $('chan').textContent = 'twitch.tv/' + st.settings.channel;
+    const showVideo = ['playing', 'voting', 'voted'].includes(st.phase) || (st.phase === 'finale' && st.replay);
+    const view = showVideo ? 'vPlay' : { lobby: 'vLobby', result: 'vResult', ranking: 'vRanking', finale: 'vFinale' }[st.phase];
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === view));
+
+    const vKey = showVideo && st.current ? st.current.id + (st.replay ? ':replay' : '') : null;
+    if (vKey !== S.videoKey) setVideo(showVideo ? st.current : null, vKey);
+    const volKey = st.settings.volume + '|' + st.settings.muted;
+    if (volKey !== S.volKey) { S.volKey = volKey; S.volSynced = false; sendVolume(); }
+
+    if (st.phase !== 'result') { S.keys.result = null; seq('result'); }
+    if (st.phase !== 'ranking') { S.keys.ranking = null; seq('ranking'); }
+    if (st.phase !== 'finale') { S.keys.finale = null; seq('finale'); }
+
+    if (view === 'vLobby') renderLobby(st);
+    if (view === 'vPlay') renderPlay(st);
+    if (view === 'vResult') renderResult(st);
+    if (view === 'vRanking') renderRanking(st);
+    if (st.phase === 'finale') renderFinale(st);
+    tick();
+  }
+
+  const CIRC = 2 * Math.PI * 100;
+  $('ringFg').style.strokeDasharray = CIRC;
+  function tick() {
+    const st = S.st;
+    if (!st) return;
+    if (st.phase === 'playing') {
+      const el = Math.max(0, (now() - st.playStartedAt) / 1000);
+      $('watchT').textContent = mmss(el);
+      $('watchBar').style.width = Math.min(100, (el / 60) * 100) + '%';
+      $('watch').classList.toggle('over', el > 60);
+    }
+    if (st.phase === 'voting' || st.phase === 'voted') {
+      const total = st.settings.voteSeconds;
+      const left = st.phase === 'voting' ? Math.max(0, (st.voteEndsAt - now()) / 1000) : 0;
+      $('ringT').textContent = st.phase === 'voting' ? Math.ceil(left) : 'Ende';
+      $('ringFg').style.strokeDashoffset = CIRC * (1 - Math.min(1, left / total));
+      $('ring').classList.toggle('low', st.phase === 'voting' && left <= 10);
+      $('ring').classList.toggle('done', st.phase !== 'voting');
+    }
+    const d = $('dur');
+    if (S.duration) {
+      const over = S.duration > 61;
+      d.textContent = `Videolänge ${mmss(S.duration)}` + (over ? ' – länger als 1 Minute!' : '');
+      d.classList.toggle('over', over);
+    } else { d.textContent = ''; d.classList.remove('over'); }
+  }
+  setInterval(tick, 100);
+
+  // ── Verbindung ──
+  let ws;
+  function connect() {
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+    ws.onopen = () => { $('offline').hidden = true; };
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.type !== 'state') return;
+      S.offset = d.state.now - Date.now();
+      S.st = d.state;
+      render();
+    };
+    ws.onclose = () => { $('offline').hidden = false; setTimeout(connect, 1500); };
+  }
+  connect();
+  setInterval(() => { if (ws && ws.readyState === 1) ws.send('k'); }, 60000);
+  setInterval(() => { fetch('/api/ping').catch(() => {}); }, 240000);
+
+  // ── Ton-Freigabe: Browser erlauben Autoplay mit Ton erst nach einem Klick (OBS-Browserquelle: ?obs=1) ──
+  const isObs = new URLSearchParams(location.search).has('obs') || !!window.obsstudio;
+  if (!isObs && !(navigator.userActivation && navigator.userActivation.hasBeenActive)) {
+    $('sound').hidden = false;
+    addEventListener('pointerdown', () => {
+      $('sound').hidden = true;
+      if (S.videoKey) { S.videoKey = null; render(); }
+    }, { once: true });
+  }
+})();
+</script>
+</body>
+</html>
