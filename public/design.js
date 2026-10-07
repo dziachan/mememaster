@@ -65,6 +65,17 @@
     return b > 0 ? Math.max(0.35, Math.min(1.15, a / b)) : 1;
   }
 
+  // Farben: Hex → RGB, und die besser lesbare Schriftfarbe (dunkel oder hell) für Flächen in dieser Farbe
+  function rgb(hex) {
+    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || ''));
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+  }
+  function inkOn(c) {
+    const lin = c.map((v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    const L = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+    return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? '#12130c' : '#ffffff';
+  }
+
   async function apply(d) {
     if (!d) return;
     const key = JSON.stringify(d);
@@ -77,6 +88,13 @@
     css.setProperty('--display', `'${disp.family}', 'Anton', Impact, sans-serif`);
     css.setProperty('--body', `'${body.family}', 'Space Grotesk', system-ui, sans-serif`);
     css.setProperty('--dw', disp.dw);
+
+    const acc = rgb(d.accent) || [212, 255, 63];
+    css.setProperty('--acid', `rgb(${acc.join(',')})`);
+    css.setProperty('--acid-ink', inkOn(acc));
+    css.setProperty('--acid-glow', `rgba(${acc.join(',')},.10)`);
+    const acc2 = rgb(d.accent2) || [255, 77, 141];
+    css.setProperty('--pink', `rgb(${acc2.join(',')})`);
 
     const hasBg = ASSET.test(d.bg || '');
     css.setProperty('--bgimg', hasBg ? `url('/api/asset/${d.bg}')` : 'none');

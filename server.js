@@ -97,6 +97,8 @@ function sanitizeImported(raw) {
   if (!PHASES.includes(s.phase)) s.phase = 'lobby';
   if (s.currentId && !s.memes.some((m) => m.id === s.currentId)) { s.currentId = null; s.phase = 'lobby'; }
   if (['playing', 'voting', 'voted'].includes(s.phase) && !s.currentId) s.phase = 'lobby';
+  if (s.phase === 'playing') s.phase = 'voting'; // ältere Spielstände: Voting läuft jetzt ab dem Start
+  s.voteEndsAt = 0;
   if (!s.votes || typeof s.votes !== 'object') s.votes = {};
   return s;
 }
@@ -144,7 +146,10 @@ const ASSET_RULES = {
 };
 const MAX_FONTS = 4;
 
-const freshDesign = () => ({ fontDisplay: 'Anton', fontBody: 'Space Grotesk', displayScale: 100, bgDim: 60, bg: null, logo: null, fonts: [] });
+// camSpace: so viel Prozent der Breite bleiben rechts frei für die Facecam
+// accent: Hauptfarbe (Standard Neon-Gelbgrün), accent2: Zweitfarbe (Standard Pink)
+const freshDesign = () => ({ fontDisplay: 'Anton', fontBody: 'Space Grotesk', displayScale: 100, bgDim: 60, camSpace: 30, accent: '#d4ff3f', accent2: '#ff4d8d', bg: null, logo: null, fonts: [] });
+const hexColor = (v, fallback) => (/^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : fallback);
 let design = freshDesign();
 let designSource = 'default'; // default | file (aus dem Projektordner) | saved (in der Regie eingestellt)
 const assets = new Map(); // id → { mime, buf }
@@ -182,7 +187,8 @@ const validFont = (v, d) => FONT_NAMES.includes(v) || (d.fonts || []).some((f) =
 
 function publicDesign() {
   return {
-    fontDisplay: design.fontDisplay, fontBody: design.fontBody, displayScale: design.displayScale, bgDim: design.bgDim,
+    fontDisplay: design.fontDisplay, fontBody: design.fontBody, displayScale: design.displayScale, bgDim: design.bgDim, camSpace: design.camSpace,
+    accent: design.accent, accent2: design.accent2,
     bg: design.bg ? design.bg.id : null, logo: design.logo ? design.logo.id : null,
     fonts: design.fonts.map((f) => ({ id: f.id, name: f.name })),
   };
@@ -193,7 +199,8 @@ function exportDesign() {
   const pack = (a) => (a ? { id: a.id, name: a.name, data: assets.get(a.id).buf.toString('base64') } : null);
   return {
     type: 'meme-master-design', fontDisplay: design.fontDisplay, fontBody: design.fontBody,
-    displayScale: design.displayScale, bgDim: design.bgDim,
+    displayScale: design.displayScale, bgDim: design.bgDim, camSpace: design.camSpace,
+    accent: design.accent, accent2: design.accent2,
     bg: pack(design.bg), logo: pack(design.logo), fonts: design.fonts.map(pack),
   };
 }
@@ -214,6 +221,9 @@ function importDesign(raw) {
   next.fonts = (Array.isArray(raw.fonts) ? raw.fonts : []).slice(0, MAX_FONTS).map((f) => take('font', f)).filter(Boolean);
   next.displayScale = clampInt(raw.displayScale, 50, 140, 100);
   next.bgDim = clampInt(raw.bgDim, 0, 95, 60);
+  next.camSpace = clampInt(raw.camSpace, 0, 45, 30);
+  next.accent = hexColor(raw.accent, next.accent);
+  next.accent2 = hexColor(raw.accent2, next.accent2);
   if (validFont(raw.fontDisplay, next)) next.fontDisplay = raw.fontDisplay;
   if (validFont(raw.fontBody, next)) next.fontBody = raw.fontBody;
   design = next;
@@ -503,7 +513,7 @@ function handleIrcLine(ws, line) {
 
 // Chat-Nachricht → Stimme. Gezählt wird nur eine reine Zahl 1–10 (auch "7/10"). Letzte Stimme pro User zählt.
 function handleChat(user, text) {
-  if (state.phase !== 'voting' || Date.now() > state.voteEndsAt) return false;
+  if (state.phase !== 'voting' || (state.voteEndsAt && Date.now() > state.voteEndsAt)) return false;
   const clean = String(text).replace(/[\u{E0000}-\u{E007F}​-‍﻿]/gu, '').trim();
   const m = clean.match(/^(10|[1-9])(?:\s*\/\s*10)?$/);
   if (!m) return false;
@@ -526,7 +536,7 @@ setInterval(() => {
 let voteTimer = null;
 function armVoteTimer() {
   clearTimeout(voteTimer);
-  if (state.phase !== 'voting') return;
+  if (state.phase !== 'voting' || !state.voteEndsAt) return; // ohne Endzeit läuft das Voting bis zur Auflösung
   voteTimer = setTimeout(() => {
     if (state.phase === 'voting') { state.phase = 'voted'; changed(); }
   }, Math.max(0, state.voteEndsAt - Date.now()));
@@ -751,14 +761,15 @@ async function doAction(a) {
       const m = a.id ? q.find((x) => x.id === a.id) : q[0];
       if (!m) throw userErr('Keine freigegebenen Memes in der Warteschlange.');
       m.status = 'live'; m.number = ++state.counter;
-      Object.assign(state, { phase: 'playing', currentId: m.id, votes: {}, voteEndsAt: 0, streamerScore: null, playStartedAt: Date.now(), replay: false });
+      // Der Chat kann sofort abstimmen – solange, bis aufgelöst wird
+      Object.assign(state, { phase: 'voting', currentId: m.id, votes: {}, voteEndsAt: 0, streamerScore: null, playStartedAt: Date.now(), replay: false });
+      armVoteTimer();
       return;
     }
     case 'voteStart': {
-      if (!['playing', 'voted'].includes(state.phase)) throw userErr('Voting kann jetzt nicht gestartet werden.');
-      if (state.phase === 'playing') state.votes = {};
+      if (!['playing', 'voted'].includes(state.phase)) throw userErr('Voting kann jetzt nicht geöffnet werden.');
       state.phase = 'voting';
-      state.voteEndsAt = Date.now() + state.settings.voteSeconds * 1000;
+      state.voteEndsAt = 0; // offen bis zur Auflösung
       armVoteTimer();
       return;
     }
@@ -845,6 +856,9 @@ async function doAction(a) {
       if (a.fontBody != null) { if (!validFont(a.fontBody, design)) throw userErr('Unbekannte Schrift.'); design.fontBody = a.fontBody; }
       if (a.displayScale != null) design.displayScale = clampInt(a.displayScale, 50, 140, 100);
       if (a.bgDim != null) design.bgDim = clampInt(a.bgDim, 0, 95, 60);
+      if (a.camSpace != null) design.camSpace = clampInt(a.camSpace, 0, 45, 30);
+      if (a.accent != null) { if (!hexColor(a.accent, null)) throw userErr('Ungültige Farbe.'); design.accent = hexColor(a.accent); }
+      if (a.accent2 != null) { if (!hexColor(a.accent2, null)) throw userErr('Ungültige Farbe.'); design.accent2 = hexColor(a.accent2); }
       saveDesignSoon();
       return;
     }

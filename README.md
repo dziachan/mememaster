@@ -44,15 +44,15 @@ Jeder andere Node-Hoster funktioniert genauso (Railway, Fly.io, eigener Server):
 ## Ablauf
 
 1. **Sammeln:** Link in den Chat posten. Einsendungen erscheinen in der Regie unter "Zur Prüfung". Mit "Vorschau" ansehen, dann freigeben oder ablehnen.
-2. **Meme starten:** "Nächstes Meme starten". Das Video läuft in der Show, eine Stoppuhr zählt bis 1:00.
-3. **Voting:** "Voting starten (60 s)". Der Chat schreibt eine Zahl von 1 bis 10. Pro Person zählt die letzte Zahl. Der Einsender selbst und dein eigener Account zählen nicht mit.
-4. **Deine Wertung:** Knöpfe 1–10 in der Regie oder Zifferntasten (0 = 10). Sie bleibt bis zur Auflösung geheim.
-   **Lautstärke:** Der Regler in der Regie stellt die Lautstärke des laufenden Videos ein und gilt auch für die folgenden. Bei YouTube Shorts stufenlos, bei TikTok nur Ton an/aus (mehr lässt der TikTok-Player von außen nicht zu), bei Instagram gar nicht. Für diese beiden: Regler im Video selbst oder in OBS.
-5. **Auflösen:** zeigt deine Note, den Chat-Schnitt, das Gesamtergebnis und wer das Meme geschickt hat.
-6. **Ranking zeigen:** Das neue Meme fährt unten ein und sortiert sich an seinen Platz.
-7. Wiederholen. Wenn die Warteschlange leer ist: **Finale starten** (Platz 3, 2, 1 mit Konfetti), danach optional "Sieger-Meme abspielen".
+2. **Meme starten:** "Nächstes Meme starten". Das Video läuft in der Show, und der Chat kann **sofort** abstimmen: eine Zahl von 1 bis 10 schreiben. Pro Person zählt die letzte Zahl. Der Einsender selbst und dein eigener Account zählen nicht mit.
+3. **Deine Wertung:** Knöpfe 1–10 in der Regie oder Zifferntasten (0 = 10). Sie bleibt bis zur Auflösung geheim.
+4. **Auflösen:** beendet das Voting und zeigt deine Note, den Chat-Schnitt, das Gesamtergebnis und wer das Meme geschickt hat. Es gibt kein Zeitlimit; das Voting läuft, bis du auflöst. Mit "Voting schließen" kannst du es vorher von Hand beenden.
+5. **Ranking zeigen:** Das neue Meme fährt unten ein und sortiert sich an seinen Platz.
+6. Wiederholen. Wenn die Warteschlange leer ist: **Finale starten** (Platz 3, 2, 1 mit Konfetti), danach optional "Sieger-Meme abspielen".
 
-Zum Proben ohne Chat: Während eines Votings auf "+25 Testvotes" klicken.
+**Lautstärke:** Der Regler in der Regie stellt die Lautstärke des laufenden Videos ein und gilt auch für die folgenden. Bei YouTube Shorts stufenlos, bei TikTok nur Ton an/aus (mehr lässt der TikTok-Player von außen nicht zu), bei Instagram gar nicht. Für diese beiden: Regler im Video selbst oder in OBS.
+
+Zum Proben ohne Chat: Während ein Meme läuft auf "+25 Testvotes" klicken.
 
 ## Design anpassen
 
@@ -60,6 +60,8 @@ In der Regie gibt es links den Bereich **Design**. Alles dort wirkt sofort in de
 
 - **Schriften:** je eine für Überschriften und für Text, aus 17 mitgelieferten Schriften oder aus eigenen Schriftdateien (.woff2, .woff, .ttf, .otf, bis 1,5 MB, maximal 4). Breite Schriften werden automatisch so verkleinert, dass das Layout passt; mit **Größe der Überschriften** stellst du nach.
 - **Hintergrundbild der Show:** PNG, JPG oder WebP bis 4 MB, am besten 1920 × 1080. Mit **Bild abdunkeln** bleibt die Schrift lesbar.
+- **Farben:** Hauptfarbe (statt Neon-Gelbgrün) und Zweitfarbe, per Klick auf einen Vorschlag oder frei über den Farbwähler. Die Schrift auf farbigen Flächen wird automatisch dunkel oder hell, je nachdem, was besser lesbar ist. Die Regie selbst behält ihre Farben.
+- **Platz rechts frei lassen:** So viel Prozent der Bildbreite bleiben in jeder Szene rechts leer, damit Facecam und Chat-Overlay nichts verdecken. Voreinstellung 30 %, 0 % nutzt das ganze Bild.
 - **Logo:** PNG, JPG, WebP oder SVG bis 1,5 MB. Es ersetzt den Schriftzug „Meme Master“ oben links, in der Lobby und auf der Einsende-Seite.
 
 **Damit das Design bleibt:** Gratis-Hoster vergessen hochgeladene Dateien bei jedem Neustart. Der Browser, in dem du das Design eingestellt hast, merkt es sich und lädt es von selbst wieder hoch, sobald du die Regie öffnest. Dauerhaft und unabhängig vom Browser geht es so: In der Regie **Design als Datei speichern**, die Datei `design.json` bei GitHub neben `server.js` hochladen. Der Server lädt sie dann bei jedem Start.
@@ -67,7 +69,7 @@ In der Regie gibt es links den Bereich **Design**. Alles dort wirkt sofort in de
 ## Wichtig zu wissen
 
 - **Gratis-Hosting vergisst Daten.** Render Free schläft nach 15 Minuten ohne Besucher ein und verliert dabei alle Einsendungen und Wertungen; der erste Aufruf danach dauert etwa eine Minute. Solange `/admin` oder `/show` offen ist, bleibt der Dienst wach. Die Regie-Seite sichert den Stand zusätzlich alle 30 Sekunden im Browser und bietet nach einem Neustart "Wiederherstellen" an. Für Einsendungen über mehrere Tage: vorher "Backup speichern" (Einstellungen) oder einen bezahlten Tarif mit Festplatte nutzen und `DATA_DIR` auf deren Pfad setzen.
-- **Videolänge wird nicht automatisch geprüft.** Beim Einsenden steht die Regel da, in der Show läuft die Stoppuhr und (bei YouTube und TikTok, sobald der Player es meldet) die echte Länge mit Warnung über 1 Minute. Zu lange Videos sortierst du bei der Freigabe aus oder überspringst sie.
+- **Videolänge wird nicht automatisch geprüft.** Beim Einsenden steht die Regel da. In der Show läuft unten eine Uhr mit, und bei YouTube und TikTok erscheint die echte Länge mit Warnung über 1 Minute, sobald der Player sie meldet. Zu lange Videos sortierst du bei der Freigabe aus oder überspringst sie.
 - **Twitch-Namen werden nicht überprüft.** Wer einsendet, tippt seinen Namen selbst ein. Pro Name, pro Browser und pro Video ist nur eine Einsendung möglich.
 - **Instagram-Reels** starten im eingebetteten Player nicht von selbst, du musst im Video auf Play klicken. Manche Reels und TikToks lassen sich gar nicht einbetten (privat, Altersbeschränkung). Deshalb vorher in der Vorschau prüfen.
 - **TikTok-Kurzlinks** (`vm.tiktok.com/...`) löst der Server selbst auf. Falls TikTok das beim Hoster blockiert, bekommt der Zuschauer den Hinweis, den vollen Link zu nehmen.

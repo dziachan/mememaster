@@ -9,13 +9,14 @@
   html, body { height: 100%; overflow: hidden; background: #000; }
   #fit { position: absolute; width: 1920px; height: 1080px; transform-origin: 0 0; }
   #stage {
+    --cam: 576px; --W: 1344px; --ph: 500px; --sw: 558px; --kT: 1; --kP: 1; /* rechter Bereich bleibt frei für die Facecam; die Werte setzt das Skript */
     position: relative; width: 1920px; height: 1080px; overflow: hidden;
     background:
-      radial-gradient(ellipse at 50% 120%, rgba(212,255,63,.10), transparent 60%),
+      radial-gradient(ellipse at 50% 120%, var(--acid-glow, rgba(212,255,63,.10)), transparent 60%),
       radial-gradient(circle at 2px 2px, #1b1b25 2px, transparent 0) 0 0 / 34px 34px,
       var(--bg);
   }
-  .top { position: absolute; left: 96px; right: 96px; top: 34px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
+  .top { position: absolute; left: 96px; right: calc(96px + var(--cam)); top: 34px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
   .logo { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(40px * var(--ds, 1)); text-transform: uppercase; letter-spacing: .02em; }
   .logo span { color: var(--acid); }
   .logo.is-logo img { display: block; max-height: 62px; max-width: 420px; }
@@ -27,73 +28,56 @@
   .view.on { opacity: 1; visibility: visible; transition: opacity .45s; }
 
   /* ── Lobby ── */
-  #vLobby .hero { position: absolute; left: 96px; top: 190px; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(300px * var(--ds, 1)); line-height: .93; text-transform: uppercase; }
+  #vLobby .lob { position: absolute; left: 96px; top: 120px; bottom: 140px; width: calc(var(--W) - 192px); display: flex; align-items: center; justify-content: space-between; gap: 64px; }
+  #vLobby .hero { flex: none; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(min(300px, (var(--W) - 256px) * .172) * var(--ds, 1)); line-height: .93; text-transform: uppercase; }
   #vLobby .heroTitle span { display: block; color: var(--acid); }
-  #vLobby .heroTitle.is-logo { height: 470px; display: flex; align-items: center; }
-  #vLobby .heroTitle.is-logo img { display: block; max-width: 820px; max-height: 470px; }
-  #vLobby .hero small b { color: var(--ink); font-weight: 700; }
-  #vLobby .hero small { display: block; font-family: var(--body); font-size: 34px; font-weight: 500; color: var(--muted); text-transform: none; line-height: 1.3; margin-top: 44px; max-width: 800px; }
-  .join { position: absolute; right: 96px; top: 190px; width: 760px; background: var(--panel); border: 2px solid var(--line); border-radius: 36px; padding: 48px; }
-  .join h2 { font-size: calc(64px * var(--ds, 1)); }
+  #vLobby .heroTitle.is-logo { display: flex; align-items: center; }
+  #vLobby .heroTitle.is-logo img { display: block; max-width: calc((var(--W) - 256px) * .5); max-height: 470px; }
+  .join { flex: 0 1 760px; min-width: 0; background: var(--panel); border: 2px solid var(--line); border-radius: 36px; padding: 44px; }
+  .join h2 { font-size: calc(min(64px, (var(--W) - 256px) * .052) * var(--ds, 1)); }
   .join .url { margin: 26px 0 30px; background: var(--acid); color: var(--acid-ink); border-radius: 20px; padding: 26px 28px; font-weight: 700; font-size: 52px; line-height: 1.1; word-break: break-all; }
   .join.closed .url { background: var(--panel-2); color: var(--muted); }
-  .join ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; font-size: 30px; color: var(--muted); }
+  .join ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; font-size: 28px; color: var(--muted); }
   .join ul b { color: var(--ink); }
   .join .count { margin-top: 34px; padding-top: 30px; border-top: 2px solid var(--line); display: flex; align-items: baseline; gap: 18px; font-size: 30px; color: var(--muted); }
   .join .count strong { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(84px * var(--ds, 1)); color: var(--ink); line-height: 1; }
-  .leader { position: absolute; left: 96px; bottom: 70px; font-size: 30px; color: var(--muted); }
+  .leader { position: absolute; left: 96px; bottom: 70px; max-width: calc(var(--W) - 192px); font-size: 30px; color: var(--muted); }
   .leader b { color: var(--ink); }
 
   /* ── Meme läuft / Voting ── */
-  .phone { position: absolute; left: 96px; top: 112px; width: 500px; height: 889px; border-radius: 34px; background: #000; border: 3px solid var(--line); overflow: hidden; box-shadow: 0 0 0 10px #111118, 0 30px 90px rgba(0,0,0,.6); }
+  .phone { position: absolute; left: 96px; top: calc(556.5px - var(--ph) * .889); width: var(--ph); height: calc(var(--ph) * 1.778); border-radius: 34px; background: #000; border: 3px solid var(--line); overflow: hidden; box-shadow: 0 0 0 10px #111118, 0 30px 90px rgba(0,0,0,.6); }
   .phone iframe { width: 100%; height: 100%; border: 0; display: block; background: #000; }
   .phone[data-platform="instagram"] { background: #fff; }
-  .side { position: absolute; left: 690px; right: 96px; top: 112px; height: 889px; display: flex; flex-direction: column; }
+  .side { position: absolute; left: calc(190px + var(--ph)); width: var(--sw); top: 112px; height: 889px; display: flex; flex-direction: column; }
   .kicker { font-size: 28px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--acid); }
-  .memeNo { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(150px * var(--ds, 1)); line-height: .95; text-transform: uppercase; margin-top: 6px; }
+  .memeNo { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(min(150px, var(--sw) * .235) * var(--ds, 1)); line-height: .95; text-transform: uppercase; margin-top: 6px; white-space: nowrap; }
   .by { font-size: 38px; font-weight: 700; margin-top: 10px; }
   .by .who { color: var(--pink); }
   .body { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; }
   .block { display: none; }
-  #stage[data-phase="playing"] .block.playing,
+  #stage[data-phase="playing"] .block.vote,
   #stage[data-phase="voting"] .block.vote,
   #stage[data-phase="voted"] .block.vote,
   #stage[data-phase="finale"] .block.winner { display: block; }
   #stage[data-phase="finale"] .side .std { display: none; }
 
-  .watch { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(96px * var(--ds, 1)); line-height: 1; }
-  .watch small { font-family: var(--body); font-size: 32px; font-weight: 500; color: var(--muted); margin-left: 16px; }
-  .watch.over { color: var(--danger); }
-  .track { height: 14px; border-radius: 7px; background: var(--panel-2); margin: 22px 0 34px; overflow: hidden; }
-  .track i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 7px; }
-  .watch.over + .track i { background: var(--danger); }
-  .cta { font-size: 40px; font-weight: 700; padding: 26px 32px; border-radius: 22px; background: var(--panel); border: 2px solid var(--line); }
-  .cta b { color: var(--acid); }
 
-  .voteHead { display: flex; align-items: center; gap: 40px; margin-bottom: 30px; }
-  .ring { position: relative; width: 220px; height: 220px; flex: none; }
-  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .ring circle { fill: none; stroke-width: 16; }
-  .ring .bgc { stroke: var(--panel-2); }
-  .ring .fg { stroke: var(--acid); stroke-linecap: round; transition: stroke-dashoffset .12s linear; }
-  .ring .t { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(104px * var(--ds, 1)); }
-  .ring.low .fg { stroke: var(--pink); }
-  .ring.done .t { font-size: calc(46px * var(--ds, 1)); color: var(--muted); }
-  .voteCta h3 { font-size: calc(78px * var(--ds, 1)); }
+  .voteHead { margin-bottom: 30px; }
+  .voteCta h3 { font-size: calc(min(78px, var(--sw) * .118) * var(--ds, 1)); line-height: 1.04; }
   .voteCta h3 em { font-style: normal; color: var(--acid); }
   .voteCta p { margin: 12px 0 0; font-size: 32px; color: var(--muted); }
   .voteCta p b { color: var(--ink); }
-  .hist { display: grid; grid-template-columns: repeat(10, 1fr); gap: 14px; align-items: end; height: 270px; padding: 0 4px; }
+  .hist { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: min(14px, var(--sw) * .022); align-items: end; height: 270px; padding: 0 4px; }
   .hist .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
   .hist .n { font-size: 24px; font-weight: 700; color: var(--muted); height: 34px; }
   .hist .bar { width: 100%; background: var(--acid); border-radius: 8px 8px 0 0; height: 4px; min-height: 4px; transition: height .35s cubic-bezier(.2,.8,.2,1); }
-  .hist .lab { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(40px * var(--ds, 1)); margin-top: 10px; border-top: 3px solid var(--line); width: 100%; text-align: center; padding-top: 8px; }
+  .hist .lab { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(min(40px, var(--sw) * .068) * var(--ds, 1)); margin-top: 10px; border-top: 3px solid var(--line); width: 100%; text-align: center; padding-top: 8px; }
   .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 20px; }
   .rated { font-size: 28px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 12px; }
   .rated i { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); display: inline-block; }
   .rated.yes { color: var(--ok); }
   .rated.yes i { background: var(--ok); }
-  .dur { font-size: 24px; color: var(--muted); }
+  .dur { font-size: 24px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .dur.over { color: var(--danger); font-weight: 700; }
 
   .winner .crownbig { width: 120px; height: 90px; color: var(--gold); }
@@ -103,31 +87,31 @@
   .winner p { font-size: 34px; color: var(--muted); margin: 10px 0 0; }
 
   /* ── Auflösung ── */
-  #vResult .head { position: absolute; left: 0; right: 0; top: 150px; text-align: center; }
+  #vResult .head { position: absolute; left: 0; width: var(--W); top: 150px; text-align: center; }
   #vResult .head h2 { font-size: calc(120px * var(--ds, 1)); }
   #vResult .head p { font-size: 44px; font-weight: 700; margin: 12px 0 0; }
   #vResult .head p span { color: var(--pink); }
-  .tiles { position: absolute; left: 96px; right: 96px; top: 420px; display: flex; align-items: center; justify-content: center; gap: 36px; }
+  .tiles { position: absolute; left: calc(96px + (var(--W) - 192px - 1600px * var(--kT)) / 2); width: 1600px; top: 420px; display: flex; align-items: center; justify-content: center; gap: 36px; transform: scale(var(--kT)); transform-origin: 0 50%; }
   .tile { width: 400px; height: 400px; border-radius: 40px; background: var(--panel); border: 2px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: translateY(40px) scale(.94); transition: opacity .5s, transform .5s cubic-bezier(.2,1.2,.3,1); }
   .tile.in { opacity: 1; transform: none; }
-  .tile .lab { font-size: 30px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .tile .lab { font-size: 32px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
   .tile .val { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(190px * var(--ds, 1)); line-height: 1.05; }
-  .tile .sub { font-size: 26px; color: var(--muted); min-height: 36px; }
+  .tile .sub { font-size: 30px; color: var(--muted); min-height: 42px; }
   .tile.total { width: 520px; height: 480px; background: var(--acid); border-color: var(--acid); color: var(--acid-ink); }
   .tile.total .lab, .tile.total .sub { color: var(--acid-ink); }
   .tile.total .val { font-size: calc(250px * var(--ds, 1)); }
   .op { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(110px * var(--ds, 1)); color: var(--muted); opacity: 0; transition: opacity .4s; }
   .op.in { opacity: 1; }
-  .place { position: absolute; left: 0; right: 0; top: 940px; text-align: center; font-size: 44px; font-weight: 700; opacity: 0; transform: translateY(16px); transition: opacity .5s, transform .5s; }
+  .place { position: absolute; left: 0; width: var(--W); top: 940px; text-align: center; font-size: 44px; font-weight: 700; opacity: 0; transform: translateY(16px); transition: opacity .5s, transform .5s; }
   .place.in { opacity: 1; transform: none; }
   .place b { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(60px * var(--ds, 1)); color: var(--pink); margin-left: 10px; }
 
   /* ── Ranking ── */
-  #vRanking .head { position: absolute; left: 96px; right: 96px; top: 108px; display: flex; align-items: baseline; justify-content: space-between; }
+  #vRanking .head { position: absolute; left: 96px; right: calc(96px + var(--cam)); top: 108px; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0 30px; }
   #vRanking .head h2 { font-size: calc(120px * var(--ds, 1)); }
   #vRanking .head p { font-size: 30px; color: var(--muted); margin: 0; }
-  #rows { position: absolute; left: 96px; right: 96px; top: 258px; height: 770px; }
-  .row { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--rh, 76px) - 8px); display: grid; grid-template-columns: 96px 380px 1fr 170px; align-items: center; transition: transform .9s cubic-bezier(.3,1.25,.4,1), opacity .5s; }
+  #rows { position: absolute; left: 96px; right: calc(96px + var(--cam)); top: 258px; height: 770px; }
+  .row { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--rh, 76px) - 8px); display: grid; grid-template-columns: 96px min(380px, 32%) 1fr 170px; align-items: center; transition: transform .9s cubic-bezier(.3,1.25,.4,1), opacity .5s; }
   .row.hide { opacity: 0; }
   .row .rk { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(52px * var(--ds, 1)); color: var(--muted); }
   .row .nm { font-size: 34px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; display: flex; align-items: center; gap: 12px; }
@@ -141,10 +125,10 @@
   .row .tag { font-size: 18px; font-weight: 700; letter-spacing: .1em; background: var(--acid); color: var(--acid-ink); border-radius: 6px; padding: 2px 8px; flex: none; }
 
   /* ── Finale ── */
-  #vFinale .head { position: absolute; left: 0; right: 0; top: 120px; text-align: center; }
-  #vFinale .head h2 { font-size: calc(130px * var(--ds, 1)); }
+  #vFinale .head { position: absolute; left: 0; width: var(--W); top: 120px; text-align: center; }
+  #vFinale .head h2 { font-size: calc(min(130px, var(--W) * .092) * var(--ds, 1)); }
   #vFinale .head h2 span { color: var(--acid); }
-  .podium { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; display: flex; justify-content: center; align-items: flex-end; gap: 28px; }
+  .podium { position: absolute; left: 0; width: var(--W); bottom: 0; height: 760px; display: flex; justify-content: center; align-items: flex-end; gap: 28px; transform: scale(var(--kP)); transform-origin: 50% 100%; }
   .pod { width: 430px; display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(80px); transition: opacity .7s, transform .9s cubic-bezier(.2,1.3,.3,1); }
   .pod.in { opacity: 1; transform: none; }
   .pod .crown { width: 110px; height: 82px; color: var(--gold); margin-bottom: 6px; }
@@ -175,7 +159,8 @@
 
     <!-- Lobby -->
     <section class="view on" id="vLobby">
-      <div class="hero"><div class="heroTitle" data-logo>Meme<span>Master</span></div><small>Dein Meme gegen alle anderen. <b id="lobStreamer">Der Streamer</b> und der Chat bewerten von 1 bis 10.</small></div>
+      <div class="lob">
+      <div class="hero"><div class="heroTitle" data-logo>Meme<span>Master</span></div></div>
       <div class="join" id="join">
         <h2 id="joinTitle">Schick dein Meme</h2>
         <div class="url" id="joinUrl"></div>
@@ -186,6 +171,7 @@
         </ul>
         <div class="count"><strong class="num" id="lobCount">0</strong><span id="lobCountLabel">Memes eingereicht</span></div>
       </div>
+      </div>
       <div class="leader" id="leader" hidden></div>
     </section>
 
@@ -194,23 +180,13 @@
       <div class="phone" id="phone"><div id="frame" style="width:100%;height:100%"></div></div>
       <div class="side">
         <div class="std">
-          <div class="kicker" id="kicker">Jetzt läuft</div>
+          <div class="kicker" id="kicker">Voting läuft</div>
           <div class="memeNo">Meme <span class="num" id="memeNo">#1</span></div>
           <div class="by" id="by"></div>
         </div>
         <div class="body">
-          <div class="block playing">
-            <div class="watch" id="watch"><span class="num" id="watchT">0:00</span><small>von max. 1:00</small></div>
-            <div class="track"><i id="watchBar"></i></div>
-            <div class="cta">Gleich wird gevotet: <b>Zahl von 1 bis 10</b> in den Chat.</div>
-          </div>
-
           <div class="block vote">
             <div class="voteHead">
-              <div class="ring" id="ring">
-                <svg viewBox="0 0 220 220"><circle class="bgc" cx="110" cy="110" r="100"/><circle class="fg" id="ringFg" cx="110" cy="110" r="100"/></svg>
-                <div class="t num" id="ringT">60</div>
-              </div>
               <div class="voteCta">
                 <h3 id="voteTitle">Schreib <em>1–10</em> in den Chat</h3>
                 <p><b class="num" id="vCount">0</b> <span id="vCountLabel">Stimmen</span> · Ø <b class="num" id="vAvg">–</b></p>
@@ -222,7 +198,7 @@
           <div class="block winner">
             <svg class="crownbig" viewBox="0 0 110 82"><path fill="currentColor" d="M6 72h98l6-52-28 22L55 4 28 42 0 20z"/><rect fill="currentColor" x="6" y="74" width="98" height="8" rx="2"/></svg>
             <div class="kicker" style="color:var(--gold)">Das Sieger-Meme</div>
-            <div class="memeNo" id="winName" style="font-size:calc(120px * var(--ds, 1))"></div>
+            <div class="memeNo" id="winName" style="font-size:calc(min(120px, var(--sw) * .19) * var(--ds, 1))"></div>
             <div class="score num" id="winScore"></div>
             <p>Punkte im Gesamt-Ranking</p>
           </div>
@@ -271,7 +247,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const stage = $('stage');
-  const S = { st: null, offset: 0, keys: {}, videoKey: null, duration: null, timers: {}, activated: false };
+  const S = { st: null, offset: 0, keys: {}, videoKey: null, duration: null, timers: {}, activated: false, cam: -1, W: 1344 };
   const CROWN = '<svg viewBox="0 0 110 82"><path fill="currentColor" d="M6 72h98l6-52-28 22L55 4 28 42 0 20z"/><rect fill="currentColor" x="6" y="74" width="98" height="8" rx="2"/></svg>';
   const EMBED_OK = /^https:\/\/www\.(youtube\.com\/embed\/|tiktok\.com\/player\/v1\/|instagram\.com\/reel\/)/;
   const fmt = (n, d = 2) => Number(n).toFixed(d).replace('.', ',');
@@ -393,11 +369,26 @@
     $('join').classList.toggle('closed', !open);
     $('joinTitle').textContent = open ? 'Schick dein Meme' : 'Einsendungen zu';
     const url = $('joinUrl');
-    url.textContent = open ? location.host : 'Gleich geht’s los';
-    url.style.fontSize = (open && location.host.length > 24 ? (location.host.length > 34 ? 34 : 42) : 52) + 'px';
+    // Adresse so groß wie möglich. Passt sie nicht in eine Zeile, wird sie an einem Punkt oder Bindestrich geteilt.
+    const host = open ? location.host : 'Gleich geht’s los';
+    const room = Math.max(200, url.clientWidth - 56);
+    const fit = (chars) => room / (chars * 0.63);
+    let lines = [host];
+    let size = fit(host.length);
+    if (open && size < 40) {
+      let best = null;
+      for (let i = 1; i < host.length; i++) {
+        if (host[i] !== '.' && host[i - 1] !== '-') continue;
+        const longer = Math.max(i, host.length - i);
+        if (!best || longer < best.longer) best = { i, longer };
+      }
+      if (best && fit(best.longer) > size) { lines = [host.slice(0, best.i), host.slice(best.i)]; size = fit(best.longer); }
+    }
+    url.textContent = '';
+    lines.forEach((line, k) => { if (k) url.append(document.createElement('br')); url.append(line); });
+    url.style.fontSize = Math.round(Math.max(24, Math.min(52, size))) + 'px';
     $('lobCount').textContent = st.counts.submitted;
     $('lobCountLabel').textContent = st.counts.submitted === 1 ? 'Meme eingereicht' : 'Memes eingereicht';
-    $('lobStreamer').textContent = st.settings.streamerName;
     const lead = st.ranking[0];
     $('leader').hidden = !lead;
     if (lead) {
@@ -418,7 +409,7 @@
       $('winScore').textContent = w ? fmt(w.total) : '';
       return;
     }
-    $('kicker').textContent = st.phase === 'playing' ? 'Jetzt läuft' : st.phase === 'voting' ? 'Voting läuft' : 'Voting beendet';
+    $('kicker').textContent = st.phase === 'voted' ? 'Voting beendet' : 'Voting läuft';
     $('memeNo').textContent = '#' + cur.number;
     const by = $('by');
     by.textContent = '';
@@ -433,7 +424,7 @@
       $('vCountLabel').textContent = st.votes.count === 1 ? 'Stimme' : 'Stimmen';
       $('vAvg').textContent = st.votes.count ? fmt(st.votes.avg, 1) : '–';
     }
-    $('voteTitle').innerHTML = st.phase === 'voting' ? 'Schreib <em>1–10</em> in den Chat' : 'Der Chat hat <em>gevotet</em>';
+    $('voteTitle').innerHTML = st.phase === 'voted' ? 'Voting <em>beendet</em>' : 'Schreib <em>1–10</em> in den Chat';
     $('rated').classList.toggle('yes', st.streamerRated);
     $('ratedT').textContent = st.streamerRated ? `${st.settings.streamerName} hat bewertet` : `${st.settings.streamerName} überlegt noch …`;
   }
@@ -461,7 +452,7 @@
       const pos = st.ranking.find((x) => x.id === cur.id);
       if (!pos) return;
       const p = $('place');
-      p.textContent = st.ranking.length > 1 ? 'Damit aktuell auf' : 'Das erste Meme setzt die Marke:';
+      p.textContent = 'Aktuell';
       const b = document.createElement('b');
       b.textContent = 'Platz ' + pos.rank;
       p.append(b);
@@ -477,7 +468,7 @@
     const at = seq('ranking');
     const box = $('rows');
     box.textContent = '';
-    $('rankSub').textContent = `Stand nach ${all.length} ${all.length === 1 ? 'Meme' : 'Memes'} · 50 % ${st.settings.streamerName}, 50 % Chat`;
+    $('rankSub').textContent = `Stand nach ${all.length} ${all.length === 1 ? 'Meme' : 'Memes'}`;
     const latest = all.find((r) => r.id === st.latestId) || null;
     const disp = all.slice(0, 10);
     if (latest && !disp.includes(latest)) disp[9] = latest;
@@ -563,9 +554,10 @@
   function confetti() {
     const cv = $('confetti');
     const cx = cv.getContext('2d');
-    const colors = ['#d4ff3f', '#ff4d8d', '#ffc93c', '#f5f2e8'];
+    const cs = getComputedStyle(document.documentElement);
+    const colors = [cs.getPropertyValue('--acid').trim() || '#d4ff3f', cs.getPropertyValue('--pink').trim() || '#ff4d8d', '#ffc93c', '#f5f2e8'];
     const ps = Array.from({ length: 220 }, () => ({
-      x: 960 + (Math.random() - 0.5) * 500, y: 420 + Math.random() * 80,
+      x: S.W / 2 + (Math.random() - 0.5) * 500, y: 420 + Math.random() * 80,
       vx: (Math.random() - 0.5) * 34, vy: -Math.random() * 30 - 8,
       w: 10 + Math.random() * 14, h: 6 + Math.random() * 10,
       r: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.5, c: colors[Math.floor(Math.random() * colors.length)],
@@ -592,6 +584,7 @@
     if (!st) return;
     stage.dataset.phase = st.phase;
     MMDesign.apply(st.design);
+    applyCam(st.design);
     $('chan').textContent = 'twitch.tv/' + st.settings.channel;
     const showVideo = ['playing', 'voting', 'voted'].includes(st.phase) || (st.phase === 'finale' && st.replay);
     const view = showVideo ? 'vPlay' : { lobby: 'vLobby', result: 'vResult', ranking: 'vRanking', finale: 'vFinale' }[st.phase];
@@ -604,7 +597,7 @@
 
     if (st.phase !== 'result') { S.keys.result = null; seq('result'); }
     if (st.phase !== 'ranking') { S.keys.ranking = null; seq('ranking'); }
-    if (st.phase !== 'finale') { S.keys.finale = null; seq('finale'); }
+    if (st.phase !== 'finale') { S.keys.finale = null; seq('finale'); cancelAnimationFrame(confRaf); $('confetti').getContext('2d').clearRect(0, 0, 1920, 1080); }
 
     if (view === 'vLobby') renderLobby(st);
     if (view === 'vPlay') renderPlay(st);
@@ -614,31 +607,34 @@
     tick();
   }
 
-  const CIRC = 2 * Math.PI * 100;
-  $('ringFg').style.strokeDasharray = CIRC;
+  // Rechts Platz für die Facecam lassen: Alle Szenen nutzen nur die Breite W = 1920 − Facecam-Bereich.
+  function applyCam(d) {
+    const raw = Number(d && d.camSpace);
+    const pct = Number.isFinite(raw) ? Math.max(0, Math.min(45, raw)) : 30;
+    const cam = Math.round(1920 * pct / 100);
+    if (cam === S.cam) return;
+    S.cam = cam;
+    S.W = 1920 - cam;
+    const css = stage.style;
+    css.setProperty('--cam', cam + 'px');
+    css.setProperty('--W', S.W + 'px');
+    const phone = Math.round(Math.max(380, Math.min(500, (S.W - 192) * 0.44))); // Video wird bei wenig Platz etwas kleiner
+    css.setProperty('--ph', phone + 'px');
+    css.setProperty('--sw', (S.W - phone - 286) + 'px');
+    css.setProperty('--kT', Math.min(1, (S.W - 192) / 1600).toFixed(4)); // Wertungs-Kacheln
+    css.setProperty('--kP', Math.min(1, (S.W - 96) / 1346).toFixed(4)); // Podium
+  }
+
   function tick() {
     const st = S.st;
     if (!st) return;
-    if (st.phase === 'playing') {
-      const el = Math.max(0, (now() - st.playStartedAt) / 1000);
-      $('watchT').textContent = mmss(el);
-      $('watchBar').style.width = Math.min(100, (el / 60) * 100) + '%';
-      $('watch').classList.toggle('over', el > 60);
-    }
-    if (st.phase === 'voting' || st.phase === 'voted') {
-      const total = st.settings.voteSeconds;
-      const left = st.phase === 'voting' ? Math.max(0, (st.voteEndsAt - now()) / 1000) : 0;
-      $('ringT').textContent = st.phase === 'voting' ? Math.ceil(left) : 'Ende';
-      $('ringFg').style.strokeDashoffset = CIRC * (1 - Math.min(1, left / total));
-      $('ring').classList.toggle('low', st.phase === 'voting' && left <= 10);
-      $('ring').classList.toggle('done', st.phase !== 'voting');
-    }
     const d = $('dur');
-    if (S.duration) {
-      const over = S.duration > 61;
-      d.textContent = `Videolänge ${mmss(S.duration)}` + (over ? ' – länger als 1 Minute!' : '');
-      d.classList.toggle('over', over);
-    } else { d.textContent = ''; d.classList.remove('over'); }
+    if (!['playing', 'voting', 'voted'].includes(st.phase)) { d.textContent = ''; return; }
+    // Laufzeit seit dem Start; die echte Videolänge, sobald der Player sie meldet
+    const el = Math.max(0, (now() - st.playStartedAt) / 1000);
+    const over = S.duration ? S.duration > 61 : false;
+    d.textContent = S.duration ? `Video ${mmss(S.duration)}` + (over ? ' – länger als 1 Minute' : '') : mmss(el);
+    d.classList.toggle('over', over);
   }
   setInterval(tick, 100);
 
