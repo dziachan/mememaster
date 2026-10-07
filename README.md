@@ -25,7 +25,7 @@ Stream-Show für Twitch: Zuschauer schicken Memes ein (TikTok, YouTube Shorts, I
    | Variable | Wert |
    |---|---|
    | `ADMIN_KEY` | dein Regie-Passwort (lang und nicht erratbar) |
-   | `TWITCH_CHANNEL` | `nicodzi` |
+   | `TWITCH_CHANNEL` | `dschann_` |
    | `STREAMER_NAME` | `Nico` |
 
 5. Deploy starten. Danach hast du eine Adresse wie `https://meme-master-xxxx.onrender.com`.
@@ -54,6 +54,16 @@ Jeder andere Node-Hoster funktioniert genauso (Railway, Fly.io, eigener Server):
 
 Zum Proben ohne Chat: Während eines Votings auf "+25 Testvotes" klicken.
 
+## Design anpassen
+
+In der Regie gibt es links den Bereich **Design**. Alles dort wirkt sofort in der Show und auf der Einsende-Seite.
+
+- **Schriften:** je eine für Überschriften und für Text, aus 17 mitgelieferten Schriften oder aus eigenen Schriftdateien (.woff2, .woff, .ttf, .otf, bis 1,5 MB, maximal 4). Breite Schriften werden automatisch so verkleinert, dass das Layout passt; mit **Größe der Überschriften** stellst du nach.
+- **Hintergrundbild der Show:** PNG, JPG oder WebP bis 4 MB, am besten 1920 × 1080. Mit **Bild abdunkeln** bleibt die Schrift lesbar.
+- **Logo:** PNG, JPG, WebP oder SVG bis 1,5 MB. Es ersetzt den Schriftzug „Meme Master“ oben links, in der Lobby und auf der Einsende-Seite.
+
+**Damit das Design bleibt:** Gratis-Hoster vergessen hochgeladene Dateien bei jedem Neustart. Der Browser, in dem du das Design eingestellt hast, merkt es sich und lädt es von selbst wieder hoch, sobald du die Regie öffnest. Dauerhaft und unabhängig vom Browser geht es so: In der Regie **Design als Datei speichern**, die Datei `design.json` bei GitHub neben `server.js` hochladen. Der Server lädt sie dann bei jedem Start.
+
 ## Wichtig zu wissen
 
 - **Gratis-Hosting vergisst Daten.** Render Free schläft nach 15 Minuten ohne Besucher ein und verliert dabei alle Einsendungen und Wertungen; der erste Aufruf danach dauert etwa eine Minute. Solange `/admin` oder `/show` offen ist, bleibt der Dienst wach. Die Regie-Seite sichert den Stand zusätzlich alle 30 Sekunden im Browser und bietet nach einem Neustart "Wiederherstellen" an. Für Einsendungen über mehrere Tage: vorher "Backup speichern" (Einstellungen) oder einen bezahlten Tarif mit Festplatte nutzen und `DATA_DIR` auf deren Pfad setzen.
@@ -79,11 +89,11 @@ Dann `http://localhost:3000/admin` öffnen.
 | Variable | Standard | Bedeutung |
 |---|---|---|
 | `ADMIN_KEY` | zufällig, steht beim Start im Log | Passwort für die Regie |
-| `TWITCH_CHANNEL` | `nicodzi` | Kanal, dessen Chat mitgelesen wird (auch in der Regie änderbar) |
+| `TWITCH_CHANNEL` | `dschann_` | Kanal, dessen Chat mitgelesen wird (auch in der Regie änderbar) |
 | `STREAMER_NAME` | `Nico` | Anzeigename in der Show |
 | `PORT` | `3000` | Port |
 | `DATA_DIR` | `./data` | Speicherort für den Spielstand |
 
 Der Chat wird anonym mitgelesen. Es ist kein Bot-Account, kein Token und keine Twitch-App nötig.
 
-Schriften: Anton und Space Grotesk (SIL Open Font License), liegen in `public/fonts`.
+Schriften: Die 17 mitgelieferten Schriften liegen in `public/fonts` und sind frei nutzbar (SIL Open Font License, Luckiest Guy und Permanent Marker unter Apache 2.0). Sie werden vom eigenen Server geladen, nicht von Google.

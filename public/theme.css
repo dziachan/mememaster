@@ -1,6 +1,22 @@
-/* Schriften liegen lokal in /fonts (Anton und Space Grotesk, beide SIL Open Font License) */
+/* Schriften liegen lokal in /fonts (alle frei nutzbar: SIL Open Font License bzw. Apache 2.0). Der Browser lädt nur die, die benutzt werden. */
 @font-face { font-family: 'Anton'; src: url('/fonts/anton.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bebas Neue'; src: url('/fonts/bebas-neue.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Archivo Black'; src: url('/fonts/archivo-black.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bangers'; src: url('/fonts/bangers.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bungee'; src: url('/fonts/bungee.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Luckiest Guy'; src: url('/fonts/luckiest-guy.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Titan One'; src: url('/fonts/titan-one.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Permanent Marker'; src: url('/fonts/permanent-marker.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Press Start 2P'; src: url('/fonts/press-start-2p.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Unbounded'; src: url('/fonts/unbounded.woff2') format('woff2'); font-weight: 200 900; font-display: swap; }
 @font-face { font-family: 'Space Grotesk'; src: url('/fonts/space-grotesk.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('/fonts/inter.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'DM Sans'; src: url('/fonts/dm-sans.woff2') format('woff2'); font-weight: 100 1000; font-display: swap; }
+@font-face { font-family: 'Outfit'; src: url('/fonts/outfit.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('/fonts/nunito.woff2') format('woff2'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'Roboto Mono'; src: url('/fonts/roboto-mono.woff2') format('woff2'); font-weight: 100 700; font-display: swap; }
+@font-face { font-family: 'Comic Neue'; src: url('/fonts/comic-neue-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Comic Neue'; src: url('/fonts/comic-neue-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 
 :root {
   --bg: #0b0b0f;
@@ -30,7 +46,7 @@ body {
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .01em; line-height: 1; margin: 0; }
+h1, h2, h3 { font-family: var(--display); font-weight: var(--dw, 400); text-transform: uppercase; letter-spacing: .01em; line-height: 1; margin: 0; }
 a { color: var(--acid); }
 button, input, select { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }

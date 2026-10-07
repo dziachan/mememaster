@@ -16,7 +16,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
-const DEFAULT_CHANNEL = (process.env.TWITCH_CHANNEL || 'nicodzi').toLowerCase().replace(/^#/, '');
+const DEFAULT_CHANNEL = (process.env.TWITCH_CHANNEL || 'dschann_').toLowerCase().replace(/^#/, '');
 const DISABLE_TWITCH = process.env.DISABLE_TWITCH === '1';
 
 let ADMIN_KEY = process.env.ADMIN_KEY || '';
@@ -128,6 +128,127 @@ function saveSoon() {
     }
   }, 400);
 }
+
+// ───────────────────────────── Design ─────────────────────────────
+// Schriften, Hintergrundbild und Logo. Liegt getrennt vom Spielstand, damit große Bilder
+// nicht bei jeder Chat-Stimme mitgespeichert werden.
+
+const { FONTS } = require('./public/design.js');
+const FONT_NAMES = FONTS.map((f) => f.name);
+const DESIGN_FILE = path.join(DATA_DIR, 'design.json');
+const DESIGN_SEED = path.join(__dirname, 'design.json'); // optional: dauerhaftes Design aus dem Projektordner
+const ASSET_RULES = {
+  bg: { types: ['image/png', 'image/jpeg', 'image/webp'], max: 4 * 1024 * 1024, label: 'Das Hintergrundbild' },
+  logo: { types: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], max: 1.5 * 1024 * 1024, label: 'Das Logo' },
+  font: { types: ['font/woff2', 'font/woff', 'font/ttf', 'font/otf'], max: 1.5 * 1024 * 1024, label: 'Die Schrift' },
+};
+const MAX_FONTS = 4;
+
+const freshDesign = () => ({ fontDisplay: 'Anton', fontBody: 'Space Grotesk', displayScale: 100, bgDim: 60, bg: null, logo: null, fonts: [] });
+let design = freshDesign();
+let designSource = 'default'; // default | file (aus dem Projektordner) | saved (in der Regie eingestellt)
+const assets = new Map(); // id → { mime, buf }
+
+// Dateityp am Inhalt erkennen, nicht am Namen
+function sniff(buf) {
+  const s4 = buf.subarray(0, 4).toString('latin1');
+  if (buf[0] === 0x89 && buf.subarray(1, 4).toString('latin1') === 'PNG') return 'image/png';
+  if (buf[0] === 0xff && buf[1] === 0xd8) return 'image/jpeg';
+  if (s4 === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (s4 === 'wOF2') return 'font/woff2';
+  if (s4 === 'wOFF') return 'font/woff';
+  if (s4 === 'OTTO') return 'font/otf';
+  if ((buf[0] === 0 && buf[1] === 1 && buf[2] === 0 && buf[3] === 0) || s4 === 'true') return 'font/ttf';
+  const head = buf.subarray(0, 800).toString('utf8').replace(/^\uFEFF/, '').trimStart();
+  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(head)) return 'image/svg+xml';
+  return null;
+}
+
+function makeAsset(kind, name, base64) {
+  const rule = ASSET_RULES[kind];
+  if (!rule) throw userErr('Unbekannte Dateiart.');
+  const buf = Buffer.from(String(base64 || ''), 'base64');
+  if (!buf.length) throw userErr('Die Datei ist leer.');
+  if (buf.length > rule.max) throw userErr(`${rule.label} ist zu groß (maximal ${Math.round(rule.max / 1024 / 1024 * 10) / 10} MB).`);
+  const mime = sniff(buf);
+  if (!rule.types.includes(mime)) {
+    throw userErr(kind === 'font' ? 'Bitte eine Schriftdatei wählen (.woff2, .woff, .ttf oder .otf).' : 'Bitte ein Bild wählen (PNG, JPG oder WebP' + (kind === 'logo' ? ', beim Logo auch SVG' : '') + ').');
+  }
+  const clean = String(name || '').replace(/\.[A-Za-z0-9]+$/, '').replace(/[^A-Za-z0-9ÄÖÜäöüß _-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return { id: crypto.randomBytes(8).toString('hex'), name: clean || (kind === 'font' ? 'Eigene Schrift' : 'Bild'), mime, buf };
+}
+
+const validFont = (v, d) => FONT_NAMES.includes(v) || (d.fonts || []).some((f) => 'custom:' + f.id === v);
+
+function publicDesign() {
+  return {
+    fontDisplay: design.fontDisplay, fontBody: design.fontBody, displayScale: design.displayScale, bgDim: design.bgDim,
+    bg: design.bg ? design.bg.id : null, logo: design.logo ? design.logo.id : null,
+    fonts: design.fonts.map((f) => ({ id: f.id, name: f.name })),
+  };
+}
+
+// Vollständiges Design inklusive Dateien (für Export, Speichern und Wiederherstellen)
+function exportDesign() {
+  const pack = (a) => (a ? { id: a.id, name: a.name, data: assets.get(a.id).buf.toString('base64') } : null);
+  return {
+    type: 'meme-master-design', fontDisplay: design.fontDisplay, fontBody: design.fontBody,
+    displayScale: design.displayScale, bgDim: design.bgDim,
+    bg: pack(design.bg), logo: pack(design.logo), fonts: design.fonts.map(pack),
+  };
+}
+
+function importDesign(raw) {
+  if (!raw || typeof raw !== 'object' || raw.type !== 'meme-master-design') throw userErr('Das ist keine Meme-Master-Design-Datei.');
+  const next = freshDesign();
+  const nextAssets = new Map();
+  const take = (kind, a) => {
+    if (!a || typeof a !== 'object') return null;
+    const made = makeAsset(kind, a.name, a.data);
+    if (/^[a-f0-9]{10,32}$/.test(String(a.id || ''))) made.id = a.id; // IDs behalten, damit die Schriftauswahl passt
+    nextAssets.set(made.id, { mime: made.mime, buf: made.buf });
+    return { id: made.id, name: made.name };
+  };
+  next.bg = take('bg', raw.bg);
+  next.logo = take('logo', raw.logo);
+  next.fonts = (Array.isArray(raw.fonts) ? raw.fonts : []).slice(0, MAX_FONTS).map((f) => take('font', f)).filter(Boolean);
+  next.displayScale = clampInt(raw.displayScale, 50, 140, 100);
+  next.bgDim = clampInt(raw.bgDim, 0, 95, 60);
+  if (validFont(raw.fontDisplay, next)) next.fontDisplay = raw.fontDisplay;
+  if (validFont(raw.fontBody, next)) next.fontBody = raw.fontBody;
+  design = next;
+  assets.clear();
+  for (const [k, v] of nextAssets) assets.set(k, v);
+}
+
+let designTimer = null;
+function saveDesignSoon() {
+  designSource = 'saved';
+  clearTimeout(designTimer);
+  designTimer = setTimeout(() => {
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      const tmp = DESIGN_FILE + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(exportDesign()));
+      fs.renameSync(tmp, DESIGN_FILE);
+    } catch (e) { console.log('[design] Speichern fehlgeschlagen: ' + e.message); }
+  }, 500);
+}
+
+function loadDesign() {
+  for (const [file, source] of [[DESIGN_FILE, 'saved'], [DESIGN_SEED, 'file']]) {
+    try {
+      importDesign(JSON.parse(fs.readFileSync(file, 'utf8')));
+      designSource = source;
+      console.log('[design] geladen aus ' + file);
+      return;
+    } catch (e) {
+      if (e.code !== 'ENOENT') console.log(`[design] ${file} konnte nicht gelesen werden: ${e.message}`);
+    }
+  }
+}
+
+function dropAsset(a) { if (a) assets.delete(a.id); }
 
 // ───────────────────────────── Helfer ─────────────────────────────
 
@@ -278,6 +399,7 @@ function publicState() {
     streamerRated: state.streamerScore != null,
     ranking: ranking(),
     latestId: state.latestId,
+    design: publicDesign(),
   };
 }
 
@@ -286,6 +408,8 @@ function adminState() {
     streamerScore: state.streamerScore,
     currentName: current() ? current().name : null,
     twitch: { connected: tw.connected, channel: state.settings.channel, disabled: DISABLE_TWITCH },
+    designSource,
+    designFiles: { bg: design.bg ? design.bg.name : null, logo: design.logo ? design.logo.name : null },
     memes: state.memes.map(({ token, nameLower, ...m }) => Object.assign(m, { embed: embedUrl(m) })),
   });
 }
@@ -516,6 +640,50 @@ app.post('/api/admin/import', requireAdmin, jsonBig, (req, res) => {
   }
 });
 
+// Hochgeladene Bilder und Schriften ausliefern. Die ID ändert sich bei jedem Upload, deshalb lange cachebar.
+app.get('/api/asset/:id', (req, res) => {
+  const a = assets.get(req.params.id);
+  if (!a) return res.status(404).end();
+  res.setHeader('Content-Type', a.mime);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+  res.end(a.buf);
+});
+
+app.post('/api/admin/asset', requireAdmin, jsonBig, (req, res) => {
+  try {
+    const { kind, name, data } = req.body || {};
+    if (kind === 'font' && design.fonts.length >= MAX_FONTS) throw userErr(`Maximal ${MAX_FONTS} eigene Schriften. Lösch erst eine.`);
+    const a = makeAsset(kind, name, data);
+    assets.set(a.id, { mime: a.mime, buf: a.buf });
+    const ref = { id: a.id, name: a.name };
+    if (kind === 'font') design.fonts.push(ref);
+    else { dropAsset(design[kind]); design[kind] = ref; }
+    saveDesignSoon();
+    broadcast();
+    res.json({ ok: true, id: a.id, name: a.name });
+  } catch (e) {
+    if (!e.user) console.log('[asset] ' + e.stack);
+    res.status(e.user ? e.code : 500).json({ ok: false, error: e.user ? e.message : 'Hochladen fehlgeschlagen.' });
+  }
+});
+
+app.get('/api/admin/design/export', requireAdmin, (req, res) => {
+  res.setHeader('Content-Disposition', 'attachment; filename="design.json"');
+  res.json(exportDesign());
+});
+app.post('/api/admin/design/import', requireAdmin, express.json({ limit: '24mb' }), (req, res) => {
+  try {
+    importDesign(req.body);
+    saveDesignSoon();
+    broadcast();
+    res.json({ ok: true });
+  } catch (e) {
+    if (!e.user) console.log('[design] ' + e.stack);
+    res.status(400).json({ ok: false, error: e.user ? e.message : 'Design-Datei konnte nicht gelesen werden.' });
+  }
+});
+
 app.post('/api/admin/action', requireAdmin, jsonSmall, async (req, res) => {
   try {
     await doAction(req.body || {});
@@ -672,6 +840,35 @@ async function doAction(a) {
       }
       return;
     }
+    case 'design': {
+      if (a.fontDisplay != null) { if (!validFont(a.fontDisplay, design)) throw userErr('Unbekannte Schrift.'); design.fontDisplay = a.fontDisplay; }
+      if (a.fontBody != null) { if (!validFont(a.fontBody, design)) throw userErr('Unbekannte Schrift.'); design.fontBody = a.fontBody; }
+      if (a.displayScale != null) design.displayScale = clampInt(a.displayScale, 50, 140, 100);
+      if (a.bgDim != null) design.bgDim = clampInt(a.bgDim, 0, 95, 60);
+      saveDesignSoon();
+      return;
+    }
+    case 'assetRemove': {
+      if (a.kind === 'bg' || a.kind === 'logo') { dropAsset(design[a.kind]); design[a.kind] = null; }
+      else if (a.kind === 'font') {
+        const f = design.fonts.find((x) => x.id === a.id);
+        if (!f) throw userErr('Schrift nicht gefunden.', 404);
+        design.fonts = design.fonts.filter((x) => x !== f);
+        dropAsset(f);
+        if (design.fontDisplay === 'custom:' + f.id) design.fontDisplay = 'Anton';
+        if (design.fontBody === 'custom:' + f.id) design.fontBody = 'Space Grotesk';
+      } else throw userErr('Unbekannte Dateiart.');
+      saveDesignSoon();
+      return;
+    }
+    case 'designReset': {
+      design = freshDesign();
+      assets.clear();
+      designSource = 'default';
+      clearTimeout(designTimer);
+      try { fs.unlinkSync(DESIGN_FILE); } catch {}
+      return;
+    }
     case 'testvotes': {
       if (state.phase !== 'voting') throw userErr('Testvotes gehen nur während eines laufenden Votings.');
       const n = clampInt(a.count, 1, 500, 25);
@@ -709,6 +906,7 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   loadState();
+  loadDesign();
   armVoteTimer();
   server.listen(PORT, () => {
     console.log(`Meme-Master läuft auf Port ${PORT}`);

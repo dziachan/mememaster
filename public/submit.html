@@ -13,8 +13,9 @@
       var(--bg);
   }
   main { max-width: 520px; margin: 0 auto; padding: 36px 16px 56px; }
-  .brand { font-family: var(--display); font-size: clamp(56px, 19vw, 104px); line-height: .88; text-transform: uppercase; }
+  .brand { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(clamp(56px, 19vw, 104px) * var(--ds, 1)); line-height: .88; text-transform: uppercase; }
   .brand span { color: var(--acid); display: block; }
+  .brand.is-logo img { display: block; max-width: 100%; max-height: 170px; }
   .tag { margin: 14px 0 26px; color: var(--muted); font-size: 17px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
   label { display: block; font-weight: 700; margin: 0 0 6px; font-size: 14px; }
@@ -27,19 +28,19 @@
   .msg.bad { display: block; background: #2a1414; border: 1px solid #5a2622; color: #ffb0a9; }
   ul.rules { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 10px; }
   ul.rules li { display: flex; gap: 12px; align-items: baseline; color: var(--muted); }
-  ul.rules b { font-family: var(--display); font-weight: 400; color: var(--acid); font-size: 20px; min-width: 22px; }
+  ul.rules b { font-family: var(--display); font-weight: var(--dw, 400); color: var(--acid); font-size: calc(20px * var(--ds, 1)); min-width: 22px; }
   ul.rules strong { color: var(--ink); }
   .status { text-align: center; }
-  .status h2 { font-size: 40px; margin: 6px 0 10px; }
+  .status h2 { font-size: calc(40px * var(--ds, 1)); margin: 6px 0 10px; }
   .status p { margin: 6px 0; color: var(--muted); }
-  .status .big { font-family: var(--display); font-size: 84px; color: var(--acid); line-height: 1; margin: 14px 0 4px; }
+  .status .big { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(84px * var(--ds, 1)); color: var(--acid); line-height: 1; margin: 14px 0 4px; }
   .live { margin-top: 26px; text-align: center; color: var(--muted); font-size: 14px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <main>
-  <div class="brand">Meme<span>Master</span></div>
+  <div class="brand" data-logo>Meme<span>Master</span></div>
   <p class="tag">Schick dein bestes Meme. <span id="streamer">Der Streamer</span> und der Chat bewerten es live von 1 bis 10.</p>
 
   <section class="card" id="formCard" hidden>
@@ -81,6 +82,7 @@
   <p class="live" id="live"></p>
 </main>
 
+<script src="/design.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -155,6 +157,7 @@
     try {
       const s = await (await fetch('/api/state', { cache: 'no-store' })).json();
       $('streamer').textContent = s.settings.streamerName;
+      MMDesign.apply(s.design);
       $('live').textContent = s.counts.submitted
         ? `${s.counts.submitted} ${s.counts.submitted === 1 ? 'Meme' : 'Memes'} eingereicht · twitch.tv/${s.settings.channel}`
         : `twitch.tv/${s.settings.channel}`;

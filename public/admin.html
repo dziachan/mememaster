@@ -16,7 +16,18 @@
   .linkbox code { font-family: inherit; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
   main { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 20px; padding: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
   @media (max-width: 980px) { main { grid-template-columns: 1fr; } .sticky { position: static !important; } }
-  .sticky { position: sticky; top: 84px; display: grid; gap: 20px; }
+  .sticky { position: sticky; top: 84px; display: grid; gap: 20px; max-height: calc(100vh - 104px); overflow-y: auto; scrollbar-width: thin; }
+  .dprev { background: #0f0f15; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow: hidden; }
+  .dprev .d1 { font-size: 44px; line-height: 1.05; text-transform: uppercase; white-space: nowrap; }
+  .dprev .d2 { font-size: 17px; margin-top: 6px; color: var(--muted); }
+  .dbox { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 8px; }
+  .dbox .lab { font-size: 13px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+  .dbox .lab b { color: var(--ink); }
+  .dbox .thumb { height: 92px; border-radius: 10px; border: 1px dashed var(--line); background: #0f0f15 center / contain no-repeat; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+  .dbox .thumb.cover { background-size: cover; }
+  .dbox input[type=range] { width: 100%; accent-color: var(--acid); }
+  .dfont { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; padding: 4px 0; }
+  select.field { appearance: auto; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
   .card h2 { font-size: 22px; margin-bottom: 12px; }
   .phase { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
@@ -143,6 +154,50 @@
         </div>
       </details>
     </section>
+
+    <section class="card">
+      <details id="design">
+        <summary>Design</summary>
+        <div class="set">
+          <div class="dprev"><div class="d1" id="dPrevH">Meme #7</div><div class="d2" id="dPrevB">Schreib 1–10 in den Chat. 128 Stimmen · Ø 7,4</div></div>
+          <label>Schrift für Überschriften<select class="field" id="dFontD"></select></label>
+          <label>Schrift für Text<select class="field" id="dFontB"></select></label>
+          <div class="dbox" style="border-top:0;padding-top:0">
+            <div class="lab"><span>Größe der Überschriften</span><b class="num" id="dScaleV">100 %</b></div>
+            <input type="range" id="dScale" min="50" max="140" step="1" value="100" aria-label="Größe der Überschriften">
+          </div>
+          <div class="dbox">
+            <div class="lab"><span>Eigene Schriften</span><span>.woff2, .woff, .ttf, .otf</span></div>
+            <div id="dFonts"></div>
+            <button class="btn small" id="dFontAdd" type="button">Schriftdatei hochladen</button>
+          </div>
+          <div class="dbox">
+            <div class="lab"><span>Hintergrundbild der Show</span><span id="dBgName"></span></div>
+            <div class="thumb cover" id="dBgThumb">Kein Bild. Empfohlen: 1920 × 1080, JPG</div>
+            <div class="rowb"><button class="btn small" id="dBgAdd" type="button">Bild wählen</button><button class="btn small danger" id="dBgDel" type="button">Entfernen</button></div>
+            <div class="lab"><span>Bild abdunkeln (für lesbare Schrift)</span><b class="num" id="dDimV">60 %</b></div>
+            <input type="range" id="dDim" min="0" max="95" step="1" value="60" aria-label="Hintergrundbild abdunkeln">
+          </div>
+          <div class="dbox">
+            <div class="lab"><span>Logo (ersetzt den Schriftzug „Meme Master“)</span><span id="dLogoName"></span></div>
+            <div class="thumb" id="dLogoThumb">Kein Logo. Empfohlen: PNG mit transparentem Hintergrund</div>
+            <div class="rowb"><button class="btn small" id="dLogoAdd" type="button">Logo wählen</button><button class="btn small danger" id="dLogoDel" type="button">Entfernen</button></div>
+          </div>
+          <div class="dbox">
+            <div class="rowb">
+              <button class="btn small" id="dExport" type="button">Design als Datei speichern</button>
+              <button class="btn small" id="dImport" type="button">Design aus Datei laden</button>
+            </div>
+            <button class="btn small danger" id="dReset" type="button">Design zurücksetzen</button>
+            <p class="hint">Änderungen wirken sofort in der Show und auf der Einsende-Seite. Dieser Browser merkt sich dein Design und lädt es nach einem Neustart des Servers von selbst wieder.</p>
+          </div>
+          <input type="file" id="fFont" accept=".woff2,.woff,.ttf,.otf" hidden>
+          <input type="file" id="fBg" accept="image/png,image/jpeg,image/webp" hidden>
+          <input type="file" id="fLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+          <input type="file" id="fDesign" accept="application/json,.json" hidden>
+        </div>
+      </details>
+    </section>
   </div>
 
   <section class="card">
@@ -162,6 +217,7 @@
 </div>
 <div id="toast" hidden></div>
 
+<script src="/design.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -183,6 +239,7 @@
   const sig = {};
   const previews = new Set();
   let settingsFilled = false;
+  let designCheck = false;
 
   // ── Login ──
   const urlKey = new URLSearchParams(location.search).get('key');
@@ -230,11 +287,12 @@
 
   function connect() {
     ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=admin&key=' + encodeURIComponent(key));
-    ws.onopen = () => chip('wsChip', 'ok', 'Verbunden');
+    ws.onopen = () => { chip('wsChip', 'ok', 'Verbunden'); designCheck = true; };
     ws.onmessage = (e) => {
       const d = JSON.parse(e.data);
       if (d.type !== 'state') return;
       st = d.state; offset = st.now - Date.now();
+      if (designCheck) { designCheck = false; restoreDesign(); }
       render();
     };
     ws.onclose = () => { chip('wsChip', 'bad', 'Getrennt'); setTimeout(connect, 1500); };
@@ -307,6 +365,7 @@
     renderTabs();
     renderList();
     fillSettings();
+    renderDesign();
     tick();
   }
 
@@ -558,6 +617,178 @@
     } catch { toast('Backup konnte nicht geladen werden.'); }
     e.target.value = '';
   });
+
+  // ── Design: Schriften, Hintergrundbild, Logo ──
+  // Der Browser hebt das komplette Design (mit Dateien) in seiner eigenen Datenbank auf. Nach einem
+  // Neustart des Servers (Gratis-Hoster vergessen hochgeladene Dateien) wird es automatisch wieder geladen.
+  function idb(mode, fn) {
+    return new Promise((res, rej) => {
+      const open = indexedDB.open('meme-master', 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('kv');
+      open.onerror = () => rej(open.error);
+      open.onsuccess = () => {
+        const tx = open.result.transaction('kv', mode);
+        const req = fn(tx.objectStore('kv'));
+        tx.oncomplete = () => res(req && req.result);
+        tx.onerror = () => rej(tx.error);
+      };
+    });
+  }
+  let rememberTimer = null;
+  function rememberDesign() {
+    clearTimeout(rememberTimer);
+    rememberTimer = setTimeout(async () => {
+      try {
+        const r = await fetch('/api/admin/design/export', { headers: { 'x-admin-key': key } });
+        if (r.ok) { const text = await r.text(); await idb('readwrite', (s) => s.put(text, 'design')); }
+      } catch {}
+    }, 900);
+  }
+  async function sendDesign(text) {
+    const r = await fetch('/api/admin/design/import', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': key }, body: text });
+    return r.json().catch(() => ({ ok: false }));
+  }
+  async function restoreDesign() {
+    if (!st || st.designSource !== 'default') return;
+    try {
+      const text = await idb('readonly', (s) => s.get('design'));
+      if (!text) return;
+      const d = await sendDesign(text);
+      if (d.ok) toast('Dein gespeichertes Design wurde wieder geladen.', true);
+    } catch {}
+  }
+  async function dAct(type, extra) { if (await act(type, extra)) rememberDesign(); }
+
+  const fileBase64 = (file) => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1] || '');
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+  function uploader(buttonId, inputId, kind, maxMb, what) {
+    $(buttonId).addEventListener('click', () => $(inputId).click());
+    $(inputId).addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      if (file.size > maxMb * 1024 * 1024) { toast(`${what} ist zu groß (maximal ${String(maxMb).replace('.', ',')} MB).`); return; }
+      try {
+        const r = await fetch('/api/admin/asset', {
+          method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': key },
+          body: JSON.stringify({ kind, name: file.name, data: await fileBase64(file) }),
+        });
+        const d = await r.json();
+        if (!d.ok) { toast(d.error || 'Hochladen fehlgeschlagen.'); return; }
+        toast(what + ' hochgeladen', true);
+        rememberDesign();
+      } catch { toast('Hochladen fehlgeschlagen.'); }
+    });
+  }
+  uploader('dFontAdd', 'fFont', 'font', 1.5, 'Die Schrift');
+  uploader('dBgAdd', 'fBg', 'bg', 4, 'Das Hintergrundbild');
+  uploader('dLogoAdd', 'fLogo', 'logo', 1.5, 'Das Logo');
+  $('dBgDel').addEventListener('click', () => dAct('assetRemove', { kind: 'bg' }));
+  $('dLogoDel').addEventListener('click', () => dAct('assetRemove', { kind: 'logo' }));
+  $('dFontD').addEventListener('change', (e) => dAct('design', { fontDisplay: e.target.value }));
+  $('dFontB').addEventListener('change', (e) => dAct('design', { fontBody: e.target.value }));
+
+  const sliderAt = {};
+  function slider(id, labelId, field) {
+    let timer = null, pending = null;
+    $(id).addEventListener('input', (e) => {
+      pending = Number(e.target.value);
+      sliderAt[id] = Date.now();
+      $(labelId).textContent = pending + ' %';
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; const v = pending; pending = null; dAct('design', { [field]: v }); }, 120);
+    });
+  }
+  slider('dScale', 'dScaleV', 'displayScale');
+  slider('dDim', 'dDimV', 'bgDim');
+
+  $('dExport').addEventListener('click', async () => {
+    const r = await fetch('/api/admin/design/export', { headers: { 'x-admin-key': key } });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = 'design.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $('dImport').addEventListener('click', () => $('fDesign').click());
+  $('fDesign').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const d = await sendDesign(await file.text());
+      if (d.ok) { toast('Design geladen', true); rememberDesign(); } else toast(d.error || 'Design-Datei konnte nicht gelesen werden.');
+    } catch { toast('Design-Datei konnte nicht gelesen werden.'); }
+  });
+  confirmable($('dReset'), async () => {
+    if (await act('designReset')) { try { await idb('readwrite', (s) => s.delete('design')); } catch {} toast('Design zurückgesetzt', true); }
+  });
+
+  function fontSelect(sel, d) {
+    sel.textContent = '';
+    const group = (label, items) => {
+      if (!items.length) return;
+      const g = document.createElement('optgroup');
+      g.label = label;
+      items.forEach(([value, text]) => { const o = document.createElement('option'); o.value = value; o.textContent = text; g.append(o); });
+      sel.append(g);
+    };
+    group('Eigene Schriften', d.fonts.map((f) => ['custom:' + f.id, f.name]));
+    group('Plakativ (für Überschriften)', MMDesign.FONTS.filter((f) => f.group === 'd').map((f) => [f.name, f.name]));
+    group('Gut lesbar (für Text)', MMDesign.FONTS.filter((f) => f.group === 'b').map((f) => [f.name, f.name]));
+  }
+
+  function renderDesign() {
+    const d = st.design;
+    if (!d) return;
+    MMDesign.ensureFaces(d);
+    const fontSig = d.fonts.map((f) => f.id + f.name).join('|');
+    if (sig.dfonts !== fontSig) {
+      sig.dfonts = fontSig;
+      fontSelect($('dFontD'), d);
+      fontSelect($('dFontB'), d);
+      const box = $('dFonts');
+      box.textContent = '';
+      if (!d.fonts.length) box.append(el('div', 'hint', 'Noch keine eigene Schrift hochgeladen.'));
+      d.fonts.forEach((f) => {
+        const row = el('div', 'dfont');
+        const name = el('span', '', f.name);
+        name.style.fontFamily = `'mmc-${f.id}'`;
+        const del = btn('Löschen', 'small danger');
+        confirmable(del, () => dAct('assetRemove', { kind: 'font', id: f.id }));
+        row.append(name, del);
+        box.append(row);
+      });
+    }
+    if (document.activeElement !== $('dFontD')) $('dFontD').value = d.fontDisplay;
+    if (document.activeElement !== $('dFontB')) $('dFontB').value = d.fontBody;
+    if (Date.now() - (sliderAt.dScale || 0) > 600) { $('dScale').value = d.displayScale; $('dScaleV').textContent = d.displayScale + ' %'; }
+    if (Date.now() - (sliderAt.dDim || 0) > 600) { $('dDim').value = d.bgDim; $('dDimV').textContent = d.bgDim + ' %'; }
+
+    const disp = MMDesign.resolve(d.fontDisplay, d) || { family: 'Anton', dw: 400 };
+    const body = MMDesign.resolve(d.fontBody, d) || { family: 'Space Grotesk' };
+    $('dPrevH').style.fontFamily = `'${disp.family}', 'Anton', sans-serif`;
+    $('dPrevH').style.fontWeight = disp.dw;
+    $('dPrevB').style.fontFamily = `'${body.family}', 'Space Grotesk', sans-serif`;
+
+    const thumb = (id, nameId, asset, name, empty) => {
+      const t = $(id);
+      const key = asset || '';
+      if (t.dataset.asset === key) return;
+      t.dataset.asset = key;
+      t.style.backgroundImage = asset ? `url('/api/asset/${asset}')` : '';
+      t.textContent = asset ? '' : empty;
+      $(nameId).textContent = asset ? name || '' : '';
+    };
+    thumb('dBgThumb', 'dBgName', d.bg, st.designFiles.bg, 'Kein Bild. Empfohlen: 1920 × 1080, JPG');
+    thumb('dLogoThumb', 'dLogoName', d.logo, st.designFiles.logo, 'Kein Logo. Empfohlen: PNG mit transparentem Hintergrund');
+    $('dBgDel').disabled = !d.bg;
+    $('dLogoDel').disabled = !d.logo;
+  }
 
   // ── Zifferntasten für die eigene Wertung ──
   addEventListener('keydown', (e) => {

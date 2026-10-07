@@ -16,26 +16,31 @@
       var(--bg);
   }
   .top { position: absolute; left: 96px; right: 96px; top: 34px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
-  .logo { font-family: var(--display); font-size: 40px; text-transform: uppercase; letter-spacing: .02em; }
+  .logo { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(40px * var(--ds, 1)); text-transform: uppercase; letter-spacing: .02em; }
   .logo span { color: var(--acid); }
+  .logo.is-logo img { display: block; max-height: 62px; max-width: 420px; }
+  .bgimg { position: absolute; inset: 0; display: none; background: linear-gradient(rgba(0,0,0,var(--bgdim, .6)), rgba(0,0,0,var(--bgdim, .6))), var(--bgimg, none) center / cover no-repeat; }
+  .has-bg .bgimg { display: block; }
   .chan { font-size: 24px; font-weight: 700; color: var(--muted); }
 
   .view { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .45s, visibility 0s .45s; }
   .view.on { opacity: 1; visibility: visible; transition: opacity .45s; }
 
   /* ── Lobby ── */
-  #vLobby .hero { position: absolute; left: 96px; top: 190px; font-family: var(--display); font-size: 300px; line-height: .93; text-transform: uppercase; }
-  #vLobby .hero > span { display: block; color: var(--acid); }
+  #vLobby .hero { position: absolute; left: 96px; top: 190px; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(300px * var(--ds, 1)); line-height: .93; text-transform: uppercase; }
+  #vLobby .heroTitle span { display: block; color: var(--acid); }
+  #vLobby .heroTitle.is-logo { height: 470px; display: flex; align-items: center; }
+  #vLobby .heroTitle.is-logo img { display: block; max-width: 820px; max-height: 470px; }
   #vLobby .hero small b { color: var(--ink); font-weight: 700; }
   #vLobby .hero small { display: block; font-family: var(--body); font-size: 34px; font-weight: 500; color: var(--muted); text-transform: none; line-height: 1.3; margin-top: 44px; max-width: 800px; }
   .join { position: absolute; right: 96px; top: 190px; width: 760px; background: var(--panel); border: 2px solid var(--line); border-radius: 36px; padding: 48px; }
-  .join h2 { font-size: 64px; }
+  .join h2 { font-size: calc(64px * var(--ds, 1)); }
   .join .url { margin: 26px 0 30px; background: var(--acid); color: var(--acid-ink); border-radius: 20px; padding: 26px 28px; font-weight: 700; font-size: 52px; line-height: 1.1; word-break: break-all; }
   .join.closed .url { background: var(--panel-2); color: var(--muted); }
   .join ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; font-size: 30px; color: var(--muted); }
   .join ul b { color: var(--ink); }
   .join .count { margin-top: 34px; padding-top: 30px; border-top: 2px solid var(--line); display: flex; align-items: baseline; gap: 18px; font-size: 30px; color: var(--muted); }
-  .join .count strong { font-family: var(--display); font-weight: 400; font-size: 84px; color: var(--ink); line-height: 1; }
+  .join .count strong { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(84px * var(--ds, 1)); color: var(--ink); line-height: 1; }
   .leader { position: absolute; left: 96px; bottom: 70px; font-size: 30px; color: var(--muted); }
   .leader b { color: var(--ink); }
 
@@ -45,7 +50,7 @@
   .phone[data-platform="instagram"] { background: #fff; }
   .side { position: absolute; left: 690px; right: 96px; top: 112px; height: 889px; display: flex; flex-direction: column; }
   .kicker { font-size: 28px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--acid); }
-  .memeNo { font-family: var(--display); font-size: 150px; line-height: .95; text-transform: uppercase; margin-top: 6px; }
+  .memeNo { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(150px * var(--ds, 1)); line-height: .95; text-transform: uppercase; margin-top: 6px; }
   .by { font-size: 38px; font-weight: 700; margin-top: 10px; }
   .by .who { color: var(--pink); }
   .body { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; }
@@ -56,7 +61,7 @@
   #stage[data-phase="finale"] .block.winner { display: block; }
   #stage[data-phase="finale"] .side .std { display: none; }
 
-  .watch { font-family: var(--display); font-size: 96px; line-height: 1; }
+  .watch { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(96px * var(--ds, 1)); line-height: 1; }
   .watch small { font-family: var(--body); font-size: 32px; font-weight: 500; color: var(--muted); margin-left: 16px; }
   .watch.over { color: var(--danger); }
   .track { height: 14px; border-radius: 7px; background: var(--panel-2); margin: 22px 0 34px; overflow: hidden; }
@@ -71,10 +76,10 @@
   .ring circle { fill: none; stroke-width: 16; }
   .ring .bgc { stroke: var(--panel-2); }
   .ring .fg { stroke: var(--acid); stroke-linecap: round; transition: stroke-dashoffset .12s linear; }
-  .ring .t { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 104px; }
+  .ring .t { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(104px * var(--ds, 1)); }
   .ring.low .fg { stroke: var(--pink); }
-  .ring.done .t { font-size: 46px; color: var(--muted); }
-  .voteCta h3 { font-size: 78px; }
+  .ring.done .t { font-size: calc(46px * var(--ds, 1)); color: var(--muted); }
+  .voteCta h3 { font-size: calc(78px * var(--ds, 1)); }
   .voteCta h3 em { font-style: normal; color: var(--acid); }
   .voteCta p { margin: 12px 0 0; font-size: 32px; color: var(--muted); }
   .voteCta p b { color: var(--ink); }
@@ -82,7 +87,7 @@
   .hist .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
   .hist .n { font-size: 24px; font-weight: 700; color: var(--muted); height: 34px; }
   .hist .bar { width: 100%; background: var(--acid); border-radius: 8px 8px 0 0; height: 4px; min-height: 4px; transition: height .35s cubic-bezier(.2,.8,.2,1); }
-  .hist .lab { font-family: var(--display); font-size: 40px; margin-top: 10px; border-top: 3px solid var(--line); width: 100%; text-align: center; padding-top: 8px; }
+  .hist .lab { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(40px * var(--ds, 1)); margin-top: 10px; border-top: 3px solid var(--line); width: 100%; text-align: center; padding-top: 8px; }
   .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 20px; }
   .rated { font-size: 28px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 12px; }
   .rated i { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); display: inline-block; }
@@ -92,39 +97,39 @@
   .dur.over { color: var(--danger); font-weight: 700; }
 
   .winner .crownbig { width: 120px; height: 90px; color: var(--gold); }
-  .winner .score { font-family: var(--display); font-size: 240px; line-height: 1.08; color: var(--gold); }
+  .winner .score { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(240px * var(--ds, 1)); line-height: 1.08; color: var(--gold); }
   .winner .memeNo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 14px; line-height: 1.2; }
   #stage[data-phase="finale"] .body { justify-content: center; }
   .winner p { font-size: 34px; color: var(--muted); margin: 10px 0 0; }
 
   /* ── Auflösung ── */
   #vResult .head { position: absolute; left: 0; right: 0; top: 150px; text-align: center; }
-  #vResult .head h2 { font-size: 120px; }
+  #vResult .head h2 { font-size: calc(120px * var(--ds, 1)); }
   #vResult .head p { font-size: 44px; font-weight: 700; margin: 12px 0 0; }
   #vResult .head p span { color: var(--pink); }
   .tiles { position: absolute; left: 96px; right: 96px; top: 420px; display: flex; align-items: center; justify-content: center; gap: 36px; }
   .tile { width: 400px; height: 400px; border-radius: 40px; background: var(--panel); border: 2px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: translateY(40px) scale(.94); transition: opacity .5s, transform .5s cubic-bezier(.2,1.2,.3,1); }
   .tile.in { opacity: 1; transform: none; }
   .tile .lab { font-size: 30px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-  .tile .val { font-family: var(--display); font-size: 190px; line-height: 1.05; }
+  .tile .val { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(190px * var(--ds, 1)); line-height: 1.05; }
   .tile .sub { font-size: 26px; color: var(--muted); min-height: 36px; }
   .tile.total { width: 520px; height: 480px; background: var(--acid); border-color: var(--acid); color: var(--acid-ink); }
   .tile.total .lab, .tile.total .sub { color: var(--acid-ink); }
-  .tile.total .val { font-size: 250px; }
-  .op { font-family: var(--display); font-size: 110px; color: var(--muted); opacity: 0; transition: opacity .4s; }
+  .tile.total .val { font-size: calc(250px * var(--ds, 1)); }
+  .op { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(110px * var(--ds, 1)); color: var(--muted); opacity: 0; transition: opacity .4s; }
   .op.in { opacity: 1; }
   .place { position: absolute; left: 0; right: 0; top: 940px; text-align: center; font-size: 44px; font-weight: 700; opacity: 0; transform: translateY(16px); transition: opacity .5s, transform .5s; }
   .place.in { opacity: 1; transform: none; }
-  .place b { font-family: var(--display); font-weight: 400; font-size: 60px; color: var(--pink); margin-left: 10px; }
+  .place b { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(60px * var(--ds, 1)); color: var(--pink); margin-left: 10px; }
 
   /* ── Ranking ── */
   #vRanking .head { position: absolute; left: 96px; right: 96px; top: 108px; display: flex; align-items: baseline; justify-content: space-between; }
-  #vRanking .head h2 { font-size: 120px; }
+  #vRanking .head h2 { font-size: calc(120px * var(--ds, 1)); }
   #vRanking .head p { font-size: 30px; color: var(--muted); margin: 0; }
   #rows { position: absolute; left: 96px; right: 96px; top: 258px; height: 770px; }
   .row { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--rh, 76px) - 8px); display: grid; grid-template-columns: 96px 380px 1fr 170px; align-items: center; transition: transform .9s cubic-bezier(.3,1.25,.4,1), opacity .5s; }
   .row.hide { opacity: 0; }
-  .row .rk { font-family: var(--display); font-size: 52px; color: var(--muted); }
+  .row .rk { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(52px * var(--ds, 1)); color: var(--muted); }
   .row .nm { font-size: 34px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; display: flex; align-items: center; gap: 12px; }
   .row .nm svg { width: 40px; height: 30px; color: var(--gold); flex: none; display: none; }
   .row.lead .nm svg { display: block; }
@@ -132,26 +137,26 @@
   .row .tr { height: calc(var(--rh, 76px) * .58); border-radius: 6px; background: rgba(255,255,255,.04); overflow: hidden; }
   .row .tr i { display: block; height: 100%; width: 0; background: var(--bar); border-radius: 0 6px 6px 0; transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
   .row.new .tr i { background: var(--acid); }
-  .row .vl { font-family: var(--display); font-size: 52px; text-align: right; }
+  .row .vl { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(52px * var(--ds, 1)); text-align: right; }
   .row .tag { font-size: 18px; font-weight: 700; letter-spacing: .1em; background: var(--acid); color: var(--acid-ink); border-radius: 6px; padding: 2px 8px; flex: none; }
 
   /* ── Finale ── */
   #vFinale .head { position: absolute; left: 0; right: 0; top: 120px; text-align: center; }
-  #vFinale .head h2 { font-size: 130px; }
+  #vFinale .head h2 { font-size: calc(130px * var(--ds, 1)); }
   #vFinale .head h2 span { color: var(--acid); }
   .podium { position: absolute; left: 0; right: 0; bottom: 0; height: 760px; display: flex; justify-content: center; align-items: flex-end; gap: 28px; }
   .pod { width: 430px; display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(80px); transition: opacity .7s, transform .9s cubic-bezier(.2,1.3,.3,1); }
   .pod.in { opacity: 1; transform: none; }
   .pod .crown { width: 110px; height: 82px; color: var(--gold); margin-bottom: 6px; }
   .pod .pn { font-size: 40px; font-weight: 700; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pod .ps { font-family: var(--display); font-size: 84px; line-height: 1.1; margin-bottom: 16px; }
+  .pod .ps { font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(84px * var(--ds, 1)); line-height: 1.1; margin-bottom: 16px; }
   .pod .ps small { font-family: var(--body); font-size: 24px; font-weight: 500; color: var(--muted); margin-left: 10px; }
-  .pod .blk { width: 100%; background: var(--panel); border: 2px solid var(--line); border-bottom: 0; border-radius: 26px 26px 0 0; display: grid; place-items: center; font-family: var(--display); font-size: 150px; color: var(--muted); }
-  .pod.p1 .blk { height: 380px; background: var(--gold); border-color: var(--gold); color: #2a1d00; font-size: 220px; }
+  .pod .blk { width: 100%; background: var(--panel); border: 2px solid var(--line); border-bottom: 0; border-radius: 26px 26px 0 0; display: grid; place-items: center; font-family: var(--display); font-weight: var(--dw, 400); font-size: calc(150px * var(--ds, 1)); color: var(--muted); }
+  .pod.p1 .blk { height: 380px; background: var(--gold); border-color: var(--gold); color: #2a1d00; font-size: calc(220px * var(--ds, 1)); }
   .pod.p2 .blk { height: 270px; }
-  .pod.p3 .blk { height: 190px; font-size: 120px; }
+  .pod.p3 .blk { height: 190px; font-size: calc(120px * var(--ds, 1)); }
   .pod.p1 .pn { font-size: 54px; }
-  .pod.p1 .ps { font-size: 120px; color: var(--gold); }
+  .pod.p1 .ps { font-size: calc(120px * var(--ds, 1)); color: var(--gold); }
   #confetti { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 8; }
 
   #sound { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; background: var(--pink); color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 999px; cursor: pointer; border: 0; }
@@ -162,14 +167,15 @@
 <body>
 <div id="fit">
   <div id="stage" data-phase="lobby">
+    <div class="bgimg"></div>
     <div class="top">
-      <div class="logo">Meme<span>Master</span></div>
+      <div class="logo" data-logo>Meme<span>Master</span></div>
       <div class="chan" id="chan"></div>
     </div>
 
     <!-- Lobby -->
     <section class="view on" id="vLobby">
-      <div class="hero">Meme<span>Master</span><small>Dein Meme gegen alle anderen. <b id="lobStreamer">Der Streamer</b> und der Chat bewerten von 1 bis 10.</small></div>
+      <div class="hero"><div class="heroTitle" data-logo>Meme<span>Master</span></div><small>Dein Meme gegen alle anderen. <b id="lobStreamer">Der Streamer</b> und der Chat bewerten von 1 bis 10.</small></div>
       <div class="join" id="join">
         <h2 id="joinTitle">Schick dein Meme</h2>
         <div class="url" id="joinUrl"></div>
@@ -216,7 +222,7 @@
           <div class="block winner">
             <svg class="crownbig" viewBox="0 0 110 82"><path fill="currentColor" d="M6 72h98l6-52-28 22L55 4 28 42 0 20z"/><rect fill="currentColor" x="6" y="74" width="98" height="8" rx="2"/></svg>
             <div class="kicker" style="color:var(--gold)">Das Sieger-Meme</div>
-            <div class="memeNo" id="winName" style="font-size:120px"></div>
+            <div class="memeNo" id="winName" style="font-size:calc(120px * var(--ds, 1))"></div>
             <div class="score num" id="winScore"></div>
             <p>Punkte im Gesamt-Ranking</p>
           </div>
@@ -260,6 +266,7 @@
 <button id="sound" hidden>Einmal klicken, damit Videos mit Ton starten</button>
 <div id="offline" hidden>Verbindung getrennt …</div>
 
+<script src="/design.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -584,6 +591,7 @@
     const st = S.st;
     if (!st) return;
     stage.dataset.phase = st.phase;
+    MMDesign.apply(st.design);
     $('chan').textContent = 'twitch.tv/' + st.settings.channel;
     const showVideo = ['playing', 'voting', 'voted'].includes(st.phase) || (st.phase === 'finale' && st.replay);
     const view = showVideo ? 'vPlay' : { lobby: 'vLobby', result: 'vResult', ranking: 'vRanking', finale: 'vFinale' }[st.phase];

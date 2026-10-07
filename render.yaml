@@ -11,6 +11,6 @@ services:
       - key: ADMIN_KEY
         sync: false # Beim Anlegen selbst ein Passwort für die Regie-Seite eintragen
       - key: TWITCH_CHANNEL
-        value: nicodzi
+        value: dschann_
       - key: STREAMER_NAME
         value: Nico
