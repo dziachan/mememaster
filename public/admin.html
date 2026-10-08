@@ -95,6 +95,7 @@
   #login h1 { font-size: 44px; }
   #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #2a1414; border: 1px solid #5a2622; color: #ffb0a9; padding: 12px 18px; border-radius: 12px; font-weight: 700; z-index: 60; max-width: 90vw; }
   #toast.good { background: #10261a; border-color: #1f5a3a; color: #9af0c1; }
+  .notice { margin: 20px 20px 0; padding: 12px 16px; border-radius: 12px; background: #2a2410; border: 1px solid #6b5a1c; color: #ffe08a; font-weight: 500; }
   #restore { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 20px 0; padding: 12px 16px; border-radius: 12px; background: #2a2410; border: 1px solid #6b5a1c; color: #ffe08a; font-weight: 500; }
   #restore span { flex: 1; min-width: 220px; }
   [hidden] { display: none !important; }
@@ -110,6 +111,7 @@
   <a class="btn small" href="/show" target="_blank" rel="noopener">Show-Ansicht öffnen</a>
 </header>
 
+<div id="weak" class="notice" hidden>Dein Regie-Passwort hat weniger als 10 Zeichen und lässt sich leichter erraten. Trag bei Render unter „Environment“ bei <b>ADMIN_KEY</b> ein längeres ein.</div>
 <div id="restore" hidden>
   <span id="restoreText"></span>
   <button class="btn small primary" id="restoreBtn">Wiederherstellen</button>
@@ -121,7 +123,7 @@
       <div class="phase"><h2 id="phaseTitle">Lobby</h2><span class="chip" id="phaseChip"></span></div>
       <div class="now" id="nowBox" hidden><div class="t" id="nowT"></div><div class="s" id="nowS"></div></div>
       <div class="live" id="liveBox" hidden>
-        <div><b class="num" id="lvTime">–</b><span>Läuft seit</span></div>
+        <div><b class="num" id="lvTime">–</b><span>Restzeit</span></div>
         <div><b class="num" id="lvCount">0</b><span>Stimmen</span></div>
         <div><b class="num" id="lvAvg">–</b><span>Ø Chat</span></div>
       </div>
@@ -144,6 +146,7 @@
           <label class="check"><input type="checkbox" id="sAnon"> Einsender erst bei der Auflösung zeigen</label>
           <label>Twitch-Kanal (Chat wird mitgelesen)<input class="field" id="sChannel" maxlength="25" spellcheck="false"></label>
           <label>Dein Name in der Show<input class="field" id="sName" maxlength="20"></label>
+          <label>Voting-Dauer ab Start des Memes, in Sekunden<input class="field" id="sSecs" type="number" min="10" max="300"></label>
           <button class="btn" id="sSave">Einstellungen speichern</button>
           <div class="rowb">
             <button class="btn small" id="bExport">Backup speichern</button>
@@ -240,7 +243,7 @@
   const fmt = (n, d = 2) => Number(n).toFixed(d).replace('.', ',');
   const PLATFORM = { tiktok: 'TikTok', youtube: 'Short', instagram: 'Reel' };
   const PHASE = {
-    lobby: ['Lobby', 'Wartet'], playing: ['Meme läuft', 'Voting offen'], voting: ['Meme läuft', 'Voting offen'], voted: ['Meme läuft', 'Voting zu'],
+    lobby: ['Lobby', 'Wartet'], playing: ['Meme läuft', 'Voting offen'], voting: ['Meme läuft', 'Voting läuft'], voted: ['Meme läuft', 'Voting beendet'],
     result: ['Auflösung', 'Gezeigt'], ranking: ['Ranking', 'Gezeigt'], finale: ['Finale', 'Gezeigt'],
   };
   const BUSY = ['playing', 'voting', 'voted'];
@@ -255,14 +258,19 @@
   const previews = new Set();
   let settingsFilled = false;
   let designCheck = false;
+  let loginError = 'Falsches Passwort.';
+  let started = false;
+  let build = '';
 
   // ── Login ──
-  const urlKey = new URLSearchParams(location.search).get('key');
-  if (urlKey) { try { localStorage.setItem('mm_admin_key', urlKey); } catch {} history.replaceState(null, '', '/admin'); }
-  try { key = urlKey || localStorage.getItem('mm_admin_key') || ''; } catch { key = urlKey || ''; }
+  // Das Passwort wird nur im Anmeldefeld eingegeben, nie über die Adresszeile (Adressen landen in Verläufen und Protokollen)
+  if (location.search) history.replaceState(null, '', '/admin');
+  try { key = localStorage.getItem('mm_admin_key') || ''; } catch { key = ''; }
 
   async function tryLogin(k) {
     const r = await fetch('/api/admin/state', { headers: { 'x-admin-key': k }, cache: 'no-store' });
+    if (r.status === 429) { loginError = 'Zu viele falsche Passwörter. Warte 10 Minuten.'; return false; }
+    loginError = 'Falsches Passwort.';
     if (!r.ok) return false;
     key = k;
     try { localStorage.setItem('mm_admin_key', k); } catch {}
@@ -273,7 +281,7 @@
     e.preventDefault();
     $('loginMsg').textContent = '';
     if (await tryLogin($('key').value.trim()).catch(() => false)) { $('login').hidden = true; start(); }
-    else $('loginMsg').textContent = 'Falsches Passwort.';
+    else $('loginMsg').textContent = loginError;
   });
   (async () => {
     if (key && await tryLogin(key).catch(() => false)) start();
@@ -301,20 +309,32 @@
   }
 
   function connect() {
-    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=admin&key=' + encodeURIComponent(key));
-    ws.onopen = () => { chip('wsChip', 'ok', 'Verbunden'); designCheck = true; };
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=admin');
+    ws.onopen = () => { ws.send(JSON.stringify({ type: 'auth', key })); chip('wsChip', 'ok', 'Verbunden'); designCheck = true; };
     ws.onmessage = (e) => {
       const d = JSON.parse(e.data);
       if (d.type !== 'state') return;
+      if (build && d.state.build && d.state.build !== build) { location.reload(); return; } // neue Programmversion online
+      build = d.state.build || build;
       st = d.state; offset = st.now - Date.now();
       if (designCheck) { designCheck = false; restoreDesign(); }
       render();
     };
-    ws.onclose = () => { chip('wsChip', 'bad', 'Getrennt'); setTimeout(connect, 1500); };
+    ws.onclose = (e) => {
+      chip('wsChip', 'bad', 'Getrennt');
+      if (e.code === 4401 || e.code === 4429) { // Passwort stimmt nicht (mehr) → neu anmelden statt endlos weiterzuprobieren
+        $('loginMsg').textContent = e.code === 4429 ? 'Zu viele falsche Passwörter. Warte 10 Minuten.' : 'Bitte neu anmelden.';
+        $('login').hidden = false;
+        return;
+      }
+      setTimeout(connect, 1500);
+    };
   }
   function chip(id, cls, text) { $(id).className = 'chip ' + cls; $(id).textContent = text; }
 
   function start() {
+    if (started) { connect(); render(); return; } // nach erneutem Anmelden nur neu verbinden
+    started = true;
     $('subLink').textContent = location.origin + '/';
     connect();
     render();
@@ -375,6 +395,7 @@
     if (!st) return;
     chip('twChip', st.twitch.disabled ? 'warn' : st.twitch.connected ? 'ok' : 'bad',
       st.twitch.disabled ? 'Twitch aus' : (st.twitch.connected ? 'Chat verbunden: ' : 'Chat nicht verbunden: ') + st.twitch.channel);
+    $('weak').hidden = !st.weakKey;
     renderRegie();
     renderVolume();
     renderTabs();
@@ -393,7 +414,7 @@
 
   function renderRegie() {
     const queued = st.memes.filter((m) => m.status === 'approved').length;
-    const s = [st.phase, st.current && st.current.id, st.streamerScore, queued, st.replay, st.ranking.length, st.settings.streamerName].join('|');
+    const s = [st.phase, st.current && st.current.id, st.streamerScore, queued, st.replay, st.ranking.length, st.settings.streamerName, st.settings.voteSeconds].join('|');
     if (sig.regie === s) return;
     sig.regie = s;
 
@@ -438,12 +459,12 @@
       c.append(nextBtn('primary big'));
       sub.append(btn('Ranking zeigen', 'small', () => act('ranking'), !st.ranking.length), btn('Finale starten', 'small', () => act('finale'), !st.ranking.length));
     } else if (st.phase === 'voting' || st.phase === 'playing') {
-      // Der Chat stimmt ab, seit das Meme läuft. Du bewertest und löst auf, wann du willst.
+      // Der Chat stimmt ab, seit das Meme läuft – eine Minute lang. Du bewertest und löst auf, wann du willst.
       c.append(rate(), reveal('primary big'));
-      sub.append(btn('Voting schließen', 'small', () => act('voteStop')), btn('+25 Testvotes', 'small', () => act('testvotes', { count: 25 })), ...skip());
+      sub.append(btn('Voting sofort schließen', 'small', () => act('voteStop')), btn('+25 Testvotes', 'small', () => act('testvotes', { count: 25 })), ...skip());
     } else if (st.phase === 'voted') {
       c.append(rate(), reveal('primary big'));
-      sub.append(btn('Voting wieder öffnen', 'small', () => act('voteStart')), ...skip());
+      sub.append(btn(`Voting nochmal öffnen (${st.settings.voteSeconds} s)`, 'small', () => act('voteStart')), ...skip());
     } else if (st.phase === 'result') {
       c.append(btn('Ranking zeigen', 'primary big', () => act('ranking')));
       sub.append(nextBtn('small'), btn('Lobby', 'small', () => act('lobby')));
@@ -495,8 +516,8 @@
   function tick() {
     if (!st) return;
     if (BUSY.includes(st.phase)) {
-      const sec = Math.max(0, Math.floor((Date.now() + offset - st.playStartedAt) / 1000));
-      $('lvTime').textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+      const left = st.phase !== 'voted' && st.voteEndsAt ? Math.max(0, Math.ceil((st.voteEndsAt - (Date.now() + offset)) / 1000)) : 0;
+      $('lvTime').textContent = st.phase === 'voted' ? 'Ende' : left + ' s';
       $('lvCount').textContent = st.votes ? st.votes.count : 0;
       $('lvAvg').textContent = st.votes && st.votes.count ? fmt(st.votes.avg, 1) : '–';
     }
@@ -536,6 +557,11 @@
 
     const tb = $('toolbar');
     tb.textContent = '';
+    if (tab === 'pending' && items.length > 1) {
+      const all = btn(`Alle ${items.length} ablehnen`, 'small danger');
+      confirmable(all, () => { previews.clear(); act('rejectAll'); });
+      tb.append(all);
+    }
     if (tab === 'approved') {
       tb.append(btn('Reihenfolge mischen', 'small', () => act('shuffle'), items.length < 2));
       const n = el('input', 'field'); n.placeholder = 'Twitch-Name'; n.maxLength = 26;
@@ -602,14 +628,14 @@
     $('sAnon').checked = s.anonymous;
     if (settingsFilled && $('settings').contains(active)) return;
     if (!settingsFilled || !$('settings').open) {
-      $('sChannel').value = s.channel; $('sName').value = s.streamerName;
+      $('sChannel').value = s.channel; $('sName').value = s.streamerName; $('sSecs').value = s.voteSeconds;
       settingsFilled = true;
     }
   }
   $('sOpen').addEventListener('change', (e) => act('settings', { submissionsOpen: e.target.checked }));
   $('sAnon').addEventListener('change', (e) => act('settings', { anonymous: e.target.checked }));
   $('sSave').addEventListener('click', async () => {
-    if (await act('settings', { channel: $('sChannel').value, streamerName: $('sName').value })) toast('Gespeichert', true);
+    if (await act('settings', { channel: $('sChannel').value, streamerName: $('sName').value, voteSeconds: Number($('sSecs').value) })) toast('Gespeichert', true);
   });
   $('bExport').addEventListener('click', async () => {
     const r = await fetch('/api/admin/export', { headers: { 'x-admin-key': key } });

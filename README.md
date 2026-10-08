@@ -44,9 +44,9 @@ Jeder andere Node-Hoster funktioniert genauso (Railway, Fly.io, eigener Server):
 ## Ablauf
 
 1. **Sammeln:** Link in den Chat posten. Einsendungen erscheinen in der Regie unter "Zur Prüfung". Mit "Vorschau" ansehen, dann freigeben oder ablehnen.
-2. **Meme starten:** "Nächstes Meme starten". Das Video läuft in der Show, und der Chat kann **sofort** abstimmen: eine Zahl von 1 bis 10 schreiben. Pro Person zählt die letzte Zahl. Der Einsender selbst und dein eigener Account zählen nicht mit.
+2. **Meme starten:** "Nächstes Meme starten". Das Video läuft in der Show, und gleichzeitig startet das Voting: Der Chat hat ab jetzt **1 Minute**, um eine Zahl von 1 bis 10 zu schreiben. Abgestimmt wird also, während das Video läuft. Pro Person zählt die letzte Zahl. Der Einsender selbst und dein eigener Account zählen nicht mit.
 3. **Deine Wertung:** Knöpfe 1–10 in der Regie oder Zifferntasten (0 = 10). Sie bleibt bis zur Auflösung geheim.
-4. **Auflösen:** beendet das Voting und zeigt deine Note, den Chat-Schnitt, das Gesamtergebnis und wer das Meme geschickt hat. Es gibt kein Zeitlimit; das Voting läuft, bis du auflöst. Mit "Voting schließen" kannst du es vorher von Hand beenden.
+4. **Auflösen:** zeigt deine Note, den Chat-Schnitt, das Gesamtergebnis und wer das Meme geschickt hat. Das geht auch vor Ablauf der Minute; dann endet das Voting sofort. Die Voting-Dauer stellst du in den Einstellungen ein, mit "Voting nochmal öffnen" gibst du eine weitere Minute.
 5. **Ranking zeigen:** Das neue Meme fährt unten ein und sortiert sich an seinen Platz.
 6. Wiederholen. Wenn die Warteschlange leer ist: **Finale starten** (Platz 3, 2, 1 mit Konfetti), danach optional "Sieger-Meme abspielen".
 
@@ -74,6 +74,14 @@ In der Regie gibt es links den Bereich **Design**. Alles dort wirkt sofort in de
 - **Instagram-Reels** starten im eingebetteten Player nicht von selbst, du musst im Video auf Play klicken. Manche Reels und TikToks lassen sich gar nicht einbetten (privat, Altersbeschränkung). Deshalb vorher in der Vorschau prüfen.
 - **TikTok-Kurzlinks** (`vm.tiktok.com/...`) löst der Server selbst auf. Falls TikTok das beim Hoster blockiert, bekommt der Zuschauer den Hinweis, den vollen Link zu nehmen.
 - **Twitch-Regeln:** Du bist für alles verantwortlich, was im Stream läuft. Die Freigabe ist dafür da.
+
+## Sicherheit
+
+- **Regie-Passwort:** `ADMIN_KEY` sollte mindestens 12 Zeichen haben. Nach 15 falschen Versuchen ist die Anmeldung für diese Adresse 10 Minuten gesperrt. Ist das Passwort kürzer als 10 Zeichen, warnt die Regie.
+- **Anmeldung:** Das Passwort wird nur im Anmeldefeld eingegeben und nie in einer Adresse übertragen. Es liegt danach im Browser gespeichert; auf fremden Geräten also nicht anmelden.
+- **Einsendungen:** höchstens 8 Versuche pro Minute und Besucher, 90 pro Minute insgesamt, 500 offene Einsendungen. Bei Spam hilft "Alle ablehnen" unter "Zur Prüfung".
+- **Eingaben:** Twitch-Namen und Links werden streng geprüft; eingebettet werden nur Videos von TikTok, YouTube und Instagram. Die Seiten dürfen nichts von fremden Adressen nachladen und nicht in fremde Seiten eingebettet werden.
+- **Nicht prüfbar:** Wer einsendet, tippt seinen Twitch-Namen selbst ein. Chat-Stimmen lassen sich mit mehreren Konten beeinflussen.
 
 ## Lokal testen
 

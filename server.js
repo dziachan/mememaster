@@ -24,6 +24,8 @@ if (!ADMIN_KEY) {
   ADMIN_KEY = crypto.randomBytes(6).toString('hex');
   console.log('\n[!] Kein ADMIN_KEY gesetzt. Zufälliges Admin-Passwort für diesen Start: ' + ADMIN_KEY + '\n');
 }
+const WEAK_KEY = ADMIN_KEY.length < 10;
+if (WEAK_KEY) console.log('[!] Das Admin-Passwort (ADMIN_KEY) hat weniger als 10 Zeichen. Bitte ein längeres setzen.');
 
 // ───────────────────────────── Zustand ─────────────────────────────
 
@@ -98,7 +100,7 @@ function sanitizeImported(raw) {
   if (s.currentId && !s.memes.some((m) => m.id === s.currentId)) { s.currentId = null; s.phase = 'lobby'; }
   if (['playing', 'voting', 'voted'].includes(s.phase) && !s.currentId) s.phase = 'lobby';
   if (s.phase === 'playing') s.phase = 'voting'; // ältere Spielstände: Voting läuft jetzt ab dem Start
-  s.voteEndsAt = 0;
+  s.voteEndsAt = Number(s.voteEndsAt) || 0;
   if (!s.votes || typeof s.votes !== 'object') s.votes = {};
   return s;
 }
@@ -410,6 +412,7 @@ function publicState() {
     ranking: ranking(),
     latestId: state.latestId,
     design: publicDesign(),
+    build: BUILD,
   };
 }
 
@@ -418,6 +421,7 @@ function adminState() {
     streamerScore: state.streamerScore,
     currentName: current() ? current().name : null,
     twitch: { connected: tw.connected, channel: state.settings.channel, disabled: DISABLE_TWITCH },
+    weakKey: WEAK_KEY,
     designSource,
     designFiles: { bg: design.bg ? design.bg.name : null, logo: design.logo ? design.logo.name : null },
     memes: state.memes.map(({ token, nameLower, ...m }) => Object.assign(m, { embed: embedUrl(m) })),
@@ -430,7 +434,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 2048 }); // Clients schicken nur winzige Nachrichten
 
 let castTimer = null;
 function broadcast() {
@@ -449,13 +453,27 @@ function broadcast() {
 function changed() { saveSoon(); broadcast(); }
 
 wss.on('connection', (ws, req) => {
-  const q = new URL(req.url, 'http://x').searchParams;
-  ws.isAdmin = q.get('role') === 'admin' && safeEqual(q.get('key') || '', ADMIN_KEY);
+  // Die Regie meldet sich mit ihrer ersten Nachricht an. Das Passwort steht so nie in einer Adresse
+  // (Adressen landen in Protokollen). Alle anderen bekommen sofort den öffentlichen Stand.
+  const wantsAdmin = /[?&]role=admin(&|$)/.test(String(req.url || ''));
+  const client = clientIp(req);
+  ws.isAdmin = false;
   ws.alive = true;
   ws.on('pong', () => { ws.alive = true; });
-  ws.on('message', () => { ws.alive = true; }); // Keepalive der Clients
   ws.on('error', () => {});
-  ws.send(JSON.stringify({ type: 'state', state: ws.isAdmin ? adminState() : publicState() }));
+  ws.on('message', (data) => {
+    ws.alive = true; // jede Nachricht gilt auch als Lebenszeichen
+    if (!wantsAdmin || ws.isAdmin) return;
+    let msg = null;
+    try { msg = JSON.parse(data.toString('utf8')); } catch {}
+    if (!msg || msg.type !== 'auth') return;
+    const result = checkAdminKey(client, msg.key);
+    if (result !== 'ok') { try { ws.close(result === 'locked' ? 4429 : 4401); } catch {} return; }
+    ws.isAdmin = true;
+    ws.send(JSON.stringify({ type: 'state', state: adminState() }));
+  });
+  if (wantsAdmin) setTimeout(() => { if (!ws.isAdmin) { try { ws.close(4401); } catch {} } }, 10000).unref(); // nie angemeldet → trennen
+  else ws.send(JSON.stringify({ type: 'state', state: publicState() }));
 });
 setInterval(() => {
   for (const c of wss.clients) {
@@ -520,6 +538,7 @@ function handleChat(user, text) {
   const cur = current();
   if (!cur) return false;
   user = String(user).toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_]{1,24}$/.test(user)) return false; // nur echte Twitch-Namen als Schlüssel
   if (user === cur.nameLower || user === state.settings.channel) return false; // keine Eigenwertung
   state.votes[user] = Number(m[1]);
   changed();
@@ -536,7 +555,7 @@ setInterval(() => {
 let voteTimer = null;
 function armVoteTimer() {
   clearTimeout(voteTimer);
-  if (state.phase !== 'voting' || !state.voteEndsAt) return; // ohne Endzeit läuft das Voting bis zur Auflösung
+  if (state.phase !== 'voting' || !state.voteEndsAt) return;
   voteTimer = setTimeout(() => {
     if (state.phase === 'voting') { state.phase = 'voted'; changed(); }
   }, Math.max(0, state.voteEndsAt - Date.now()));
@@ -547,29 +566,86 @@ function armVoteTimer() {
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'DENY'); // die Seiten dürfen nicht in fremde Seiten eingebettet werden
+  if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+  // Nur eigene Dateien und die drei Video-Plattformen sind erlaubt. Selbst wenn jemand fremden Code
+  // einschleusen könnte, dürfte der nichts von außen nachladen und nichts nach außen schicken.
+  const host = /^[a-z0-9.:-]+$/i.test(req.headers.host || '') ? req.headers.host : '';
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    "connect-src 'self'" + (host ? ` ws://${host} wss://${host}` : ''),
+    'frame-src https://www.youtube.com https://www.tiktok.com https://www.instagram.com',
+    "frame-ancestors 'none'", "base-uri 'none'", "form-action 'self'", "object-src 'none'",
+  ].join('; '));
   next();
 });
 const jsonSmall = express.json({ limit: '20kb' });
 const jsonBig = express.json({ limit: '8mb' });
 
 const pub = path.join(__dirname, 'public');
-app.get('/', (req, res) => res.sendFile(path.join(pub, 'submit.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(pub, 'admin.html')));
-app.get('/show', (req, res) => res.sendFile(path.join(pub, 'show.html')));
-app.use(express.static(pub, { index: false }));
+
+// Kennung der laufenden Programmversion. Ändert sie sich (neue Version online), laden offene
+// Show- und Regie-Fenster von selbst neu – sonst liefe dort der alte Stand weiter.
+const BUILD = (() => {
+  const h = crypto.createHash('sha1');
+  try {
+    h.update(fs.readFileSync(__filename));
+    for (const f of fs.readdirSync(pub).sort()) if (/\.(html|js|css)$/.test(f)) h.update(fs.readFileSync(path.join(pub, f)));
+  } catch (e) { h.update(String(Date.now())); }
+  return h.digest('hex').slice(0, 12);
+})();
+app.get('/', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(pub, 'submit.html')));
+app.get('/admin', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(pub, 'admin.html')));
+app.get('/show', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(pub, 'show.html')));
+app.use(express.static(pub, { index: false, setHeaders: (res, file) => { if (/\.(html|js|css)$/.test(file)) res.setHeader('Cache-Control', 'no-cache'); } }));
 
 app.get('/api/ping', (req, res) => res.json({ ok: true }));
 app.get('/api/state', (req, res) => res.json(publicState()));
 
 // Einfaches Limit: max. 8 Einsende-Versuche pro Minute und IP
 const hits = new Map();
-function limited(ip) {
+function limited(key, max = 8) {
   const now = Date.now();
-  const list = (hits.get(ip) || []).filter((t) => now - t < 60000);
+  const list = (hits.get(key) || []).filter((t) => now - t < 60000);
   list.push(now);
-  hits.set(ip, list);
-  return list.length > 8;
+  hits.set(key, list);
+  return list.length > max;
 }
+
+// Woher kommt die Anfrage? Bei Render steht die echte Adresse des Besuchers in "CF-Connecting-IP"
+// (setzt Cloudflare, lässt sich vom Besucher nicht fälschen). Sonst zählt der letzte Eintrag von
+// X-Forwarded-For – den hat der Proxy direkt vor diesem Server angehängt.
+function clientIp(req) {
+  const cf = String(req.headers['cf-connecting-ip'] || '').trim();
+  if (/^[0-9a-f:.]{3,45}$/i.test(cf)) return cf;
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+  return xff[xff.length - 1] || (req.socket && req.socket.remoteAddress) || 'unbekannt';
+}
+
+// Schutz gegen Passwort-Raten: nach 15 falschen Versuchen ist diese Adresse 10 Minuten gesperrt.
+// Während der Sperre wird gar nicht mehr geprüft, es lässt sich also nichts weiterprobieren.
+const authFails = new Map();
+const AUTH_WINDOW = 10 * 60 * 1000;
+function checkAdminKey(client, key) {
+  const now = Date.now();
+  let f = authFails.get(client);
+  if (f && f.lockedUntil > now) return 'locked';
+  if (safeEqual(key || '', ADMIN_KEY)) return 'ok';
+  if (!f || now - f.first > AUTH_WINDOW) f = { count: 0, first: now, lockedUntil: 0 };
+  f.count++;
+  if (f.count >= 15) {
+    f.lockedUntil = now + AUTH_WINDOW;
+    f.count = 0;
+    console.log('[auth] zu viele falsche Passwörter von ' + client + ' – 10 Minuten gesperrt');
+  }
+  authFails.set(client, f);
+  return 'bad';
+}
+setInterval(() => { const now = Date.now(); for (const [k, f] of authFails) if (f.lockedUntil < now && now - f.first > AUTH_WINDOW) authFails.delete(k); }, 120000).unref();
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.some((t) => now - t < 60000)) hits.delete(k); }, 120000).unref();
 
 async function addMeme({ name, url, token, byAdmin }) {
@@ -598,7 +674,8 @@ const nextOrder = () => state.memes.reduce((mx, m) => Math.max(mx, m.order), 0) 
 
 app.post('/api/submit', jsonSmall, async (req, res) => {
   try {
-    if (limited(req.ip)) throw userErr('Zu viele Versuche. Warte kurz.', 429);
+    if (limited(clientIp(req))) throw userErr('Zu viele Versuche. Warte kurz.', 429);
+    if (limited('*alle*', 90)) throw userErr('Gerade senden sehr viele gleichzeitig ein. Versuch es in einer Minute nochmal.', 429); // Bremse gegen Massen-Spam
     if (!state.settings.submissionsOpen) throw userErr('Die Einsendungen sind gerade geschlossen.', 403);
     const token = String((req.body && req.body.token) || '');
     if (!/^[a-f0-9]{16,64}$/.test(token)) throw userErr('Ungültige Anfrage. Lade die Seite neu.');
@@ -629,7 +706,9 @@ app.get('/api/my', (req, res) => {
 });
 
 function requireAdmin(req, res, next) {
-  if (!safeEqual(req.get('x-admin-key') || '', ADMIN_KEY)) return res.status(401).json({ ok: false, error: 'Falsches Admin-Passwort.' });
+  const result = checkAdminKey(clientIp(req), req.get('x-admin-key'));
+  if (result === 'locked') return res.status(429).json({ ok: false, error: 'Zu viele falsche Passwörter. Warte 10 Minuten.' });
+  if (result !== 'ok') return res.status(401).json({ ok: false, error: 'Falsches Admin-Passwort.' });
   next();
 }
 
@@ -761,15 +840,15 @@ async function doAction(a) {
       const m = a.id ? q.find((x) => x.id === a.id) : q[0];
       if (!m) throw userErr('Keine freigegebenen Memes in der Warteschlange.');
       m.status = 'live'; m.number = ++state.counter;
-      // Der Chat kann sofort abstimmen – solange, bis aufgelöst wird
-      Object.assign(state, { phase: 'voting', currentId: m.id, votes: {}, voteEndsAt: 0, streamerScore: null, playStartedAt: Date.now(), replay: false });
+      // Der Chat stimmt ab, während das Video läuft: Das Voting startet mit dem Meme und endet nach der Voting-Dauer (1 Minute)
+      Object.assign(state, { phase: 'voting', currentId: m.id, votes: {}, voteEndsAt: Date.now() + state.settings.voteSeconds * 1000, streamerScore: null, playStartedAt: Date.now(), replay: false });
       armVoteTimer();
       return;
     }
     case 'voteStart': {
       if (!['playing', 'voted'].includes(state.phase)) throw userErr('Voting kann jetzt nicht geöffnet werden.');
       state.phase = 'voting';
-      state.voteEndsAt = 0; // offen bis zur Auflösung
+      state.voteEndsAt = Date.now() + state.settings.voteSeconds * 1000; // noch einmal die volle Voting-Dauer
       armVoteTimer();
       return;
     }
@@ -883,6 +962,10 @@ async function doAction(a) {
       try { fs.unlinkSync(DESIGN_FILE); } catch {}
       return;
     }
+    case 'rejectAll': {
+      state.memes.forEach((m) => { if (m.status === 'pending') m.status = 'rejected'; });
+      return;
+    }
     case 'testvotes': {
       if (state.phase !== 'voting') throw userErr('Testvotes gehen nur während eines laufenden Votings.');
       const n = clampInt(a.count, 1, 500, 25);
@@ -917,6 +1000,10 @@ app.use((err, req, res, next) => {
 });
 
 // ───────────────────────── Start ─────────────────────────
+
+// Ein unerwarteter Fehler soll die laufende Show nicht beenden
+process.on('uncaughtException', (e) => console.log('[fehler] ' + (e && e.stack || e)));
+process.on('unhandledRejection', (e) => console.log('[fehler] ' + (e && e.stack || e)));
 
 if (require.main === module) {
   loadState();
