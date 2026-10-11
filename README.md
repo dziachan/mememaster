@@ -2,7 +2,7 @@
 
 Stream-Show für Twitch: Zuschauer schicken Memes ein (TikTok, YouTube Shorts, Insta Reels), du und der Chat bewerten jedes Meme von 1 bis 10. Nach jedem Meme gibt es eine animierte Rangliste, am Ende ein Finale mit Podium.
 
-**Wertung:** Gesamt = 50 % deine Note + 50 % Chat-Durchschnitt. Ohne Chat-Stimmen zählt nur deine Note. Bei Gleichstand gewinnt der höhere Chat-Schnitt.
+**Wertung:** Gesamt = deine Note und der Chat-Durchschnitt, standardmäßig je 50 %. Die Gewichtung stellst du in der Regie unter Einstellungen ein. Ohne Chat-Stimmen zählt nur deine Note. Bei Gleichstand gewinnt der höhere Chat-Schnitt.
 
 ## Die drei Seiten
 
@@ -51,6 +51,8 @@ Jeder andere Node-Hoster funktioniert genauso (Railway, Fly.io, eigener Server):
 6. Wiederholen. Wenn die Warteschlange leer ist: **Finale starten** (Platz 3, 2, 1 mit Konfetti), danach optional "Sieger-Meme abspielen".
 
 **Lautstärke:** Der Regler in der Regie stellt die Lautstärke des laufenden Videos ein und gilt auch für die folgenden. Bei YouTube Shorts stufenlos, bei TikTok nur Ton an/aus (mehr lässt der TikTok-Player von außen nicht zu), bei Instagram gar nicht. Für diese beiden: Regler im Video selbst oder in OBS.
+
+**Neue Runde:** Der Knopf "Neue Runde starten" in der Regie löscht alle Einsendungen, Wertungen und das Ranking und öffnet die Einsendungen wieder. Einstellungen und Design bleiben.
 
 Zum Proben ohne Chat: Während ein Meme läuft auf "+25 Testvotes" klicken.
 

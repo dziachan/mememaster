@@ -85,6 +85,8 @@
   .set { display: grid; gap: 12px; margin-top: 14px; }
   .set label { font-size: 13px; font-weight: 700; color: var(--muted); display: grid; gap: 5px; }
   .set .field { padding: 9px 12px; }
+  .set input[type=range] { width: 100%; accent-color: var(--acid); }
+  .set .weight b { color: var(--ink); }
   .set .check { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 15px; }
   .set .check input { width: 18px; height: 18px; accent-color: var(--acid); }
   .set .rowb { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -147,6 +149,9 @@
           <label>Twitch-Kanal (Chat wird mitgelesen)<input class="field" id="sChannel" maxlength="25" spellcheck="false"></label>
           <label>Dein Name in der Show<input class="field" id="sName" maxlength="20"></label>
           <label>Voting-Dauer ab Start des Memes, in Sekunden<input class="field" id="sSecs" type="number" min="10" max="300"></label>
+          <label>Gewichtung der Wertung <span class="weight"><b id="sWeightV">50 % du · 50 % Chat</b></span>
+            <input type="range" id="sWeight" min="0" max="100" step="5" value="50" aria-label="So viel Prozent zählt deine Note">
+          </label>
           <button class="btn" id="sSave">Einstellungen speichern</button>
           <div class="rowb">
             <button class="btn small" id="bExport">Backup speichern</button>
@@ -155,7 +160,6 @@
           </div>
           <div class="rowb">
             <button class="btn small danger" data-confirm data-reset="results">Wertungen zurücksetzen</button>
-            <button class="btn small danger" data-confirm data-reset="all">Alles löschen</button>
           </div>
           <p class="hint">Zifferntasten 1–9 und 0 (= 10) setzen deine Wertung, solange ein Meme läuft.</p>
         </div>
@@ -414,7 +418,7 @@
 
   function renderRegie() {
     const queued = st.memes.filter((m) => m.status === 'approved').length;
-    const s = [st.phase, st.current && st.current.id, st.streamerScore, queued, st.replay, st.ranking.length, st.settings.streamerName, st.settings.voteSeconds].join('|');
+    const s = [st.phase, st.current && st.current.id, st.streamerScore, queued, st.replay, st.ranking.length, st.settings.streamerName, st.settings.voteSeconds, st.memes.length].join('|');
     if (sig.regie === s) return;
     sig.regie = s;
 
@@ -455,6 +459,17 @@
       return [a, b];
     };
 
+    const newRound = () => {
+      const b = btn('Neue Runde starten', 'small danger');
+      confirmable(b, async () => {
+        if (!(await act('newRound'))) return;
+        try { localStorage.removeItem('mm_backup'); } catch {} // die alte Runde nicht als "Wiederherstellen" anbieten
+        previews.clear();
+        tab = 'pending';
+        toast('Neue Runde: alles geleert, Einsendungen sind offen', true);
+      });
+      return b;
+    };
     if (st.phase === 'lobby') {
       c.append(nextBtn('primary big'));
       sub.append(btn('Ranking zeigen', 'small', () => act('ranking'), !st.ranking.length), btn('Finale starten', 'small', () => act('finale'), !st.ranking.length));
@@ -478,7 +493,11 @@
         : btn('Sieger-Meme abspielen', 'primary big', () => act('replay')));
       sub.append(btn('Ranking zeigen', 'small', () => act('ranking')), btn('Lobby', 'small', () => act('lobby')));
     }
-    c.append(sub);
+    if (!BUSY.includes(st.phase) && (st.memes.length || st.phase !== 'lobby')) {
+      const row = el('div', 'sub');
+      row.append(newRound());
+      c.append(sub, row);
+    } else c.append(sub);
   }
 
   // ── Lautstärke ──
@@ -624,6 +643,7 @@
   function fillSettings() {
     const active = document.activeElement;
     const s = st.settings;
+    if (Date.now() - weightAt > 800) { $('sWeight').value = s.streamerWeight; $('sWeightV').textContent = weightLabel(s.streamerWeight); }
     $('sOpen').checked = s.submissionsOpen;
     $('sAnon').checked = s.anonymous;
     if (settingsFilled && $('settings').contains(active)) return;
@@ -632,6 +652,11 @@
       settingsFilled = true;
     }
   }
+  // Gewichtung: wie viel deine Note gegenüber dem Chat-Schnitt zählt
+  let weightAt = 0;
+  const weightLabel = (w) => (w >= 100 ? 'nur deine Note' : w <= 0 ? 'nur der Chat' : `${w} % du · ${100 - w} % Chat`);
+  $('sWeight').addEventListener('input', (e) => { weightAt = Date.now(); $('sWeightV').textContent = weightLabel(Number(e.target.value)); });
+  $('sWeight').addEventListener('change', async (e) => { weightAt = Date.now(); if (await act('settings', { streamerWeight: Number(e.target.value) })) toast('Gewichtung gespeichert – gilt ab dem nächsten Auflösen', true); });
   $('sOpen').addEventListener('change', (e) => act('settings', { submissionsOpen: e.target.checked }));
   $('sAnon').addEventListener('change', (e) => act('settings', { anonymous: e.target.checked }));
   $('sSave').addEventListener('click', async () => {

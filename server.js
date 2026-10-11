@@ -35,6 +35,7 @@ function freshState() {
       channel: DEFAULT_CHANNEL,
       streamerName: process.env.STREAMER_NAME || 'Nico',
       voteSeconds: 60,
+      streamerWeight: 50, // so viel Prozent zählt die Note des Streamers, der Rest ist der Chat-Durchschnitt
       anonymous: true,
       submissionsOpen: true,
       volume: 100, // Lautstärke der Videos in der Show (0–100)
@@ -76,6 +77,7 @@ function sanitizeImported(raw) {
   s.settings = Object.assign(freshState().settings, raw.settings || {});
   s.settings.channel = cleanChannel(s.settings.channel) || DEFAULT_CHANNEL;
   s.settings.voteSeconds = clampInt(s.settings.voteSeconds, 10, 300, 60);
+  s.settings.streamerWeight = clampInt(s.settings.streamerWeight, 0, 100, 50);
   s.settings.volume = clampInt(s.settings.volume, 0, 100, 100);
   s.settings.muted = !!s.settings.muted;
   s.settings.streamerName = String(s.settings.streamerName || 'Streamer').slice(0, 20);
@@ -113,6 +115,7 @@ function normalizeResult(r) {
     votes: Number(r.votes) || 0,
     hist,
     total: Number(r.total) || 0,
+    weight: r.weight == null ? 50 : clampInt(r.weight, 0, 100, 50),
     playedAt: Number(r.playedAt) || Date.now(),
   };
 }
@@ -869,12 +872,15 @@ async function doAction(a) {
       if (state.streamerScore == null) throw userErr('Erst deine eigene Wertung (1–10) abgeben.');
       const cur = current();
       const s = voteStats();
+      const w = state.settings.streamerWeight;
       cur.result = {
         streamer: state.streamerScore,
         chatAvg: s.count ? round2(s.avg) : null,
         votes: s.count,
         hist: s.hist,
-        total: round2(s.count ? (state.streamerScore + s.avg) / 2 : state.streamerScore),
+        // Gewichtung aus den Einstellungen; ohne Chat-Stimmen zählt nur die Streamer-Note
+        total: round2(s.count ? (w * state.streamerScore + (100 - w) * s.avg) / 100 : state.streamerScore),
+        weight: w,
         playedAt: Date.now(),
       };
       cur.status = 'played';
@@ -918,6 +924,7 @@ async function doAction(a) {
     case 'settings': {
       const s = state.settings;
       if (a.voteSeconds != null) s.voteSeconds = clampInt(a.voteSeconds, 10, 300, 60);
+      if (a.streamerWeight != null) s.streamerWeight = clampInt(a.streamerWeight, 0, 100, 50);
       if (a.anonymous != null) s.anonymous = !!a.anonymous;
       if (a.submissionsOpen != null) s.submissionsOpen = !!a.submissionsOpen;
       if (a.volume != null) s.volume = clampInt(a.volume, 0, 100, 100);
@@ -974,6 +981,15 @@ async function doAction(a) {
         const v = Math.round(center + (Math.random() + Math.random() + Math.random() - 1.5) * 3.2);
         handleChat('test_' + crypto.randomBytes(3).toString('hex'), String(Math.min(10, Math.max(1, v))));
       }
+      return;
+    }
+    case 'newRound': {
+      // Neue Runde: alle Einsendungen, Wertungen und das Ranking weg, Einsendungen wieder offen.
+      // Einstellungen und Design bleiben.
+      clearTimeout(voteTimer);
+      const settings = Object.assign(state.settings, { submissionsOpen: true });
+      state = freshState();
+      state.settings = settings;
       return;
     }
     case 'reset': {

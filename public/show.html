@@ -232,7 +232,7 @@
         <div class="op" id="op1">+</div>
         <div class="tile" id="tC"><div class="lab">Chat</div><div class="val num" id="tCVal">0</div><div class="sub" id="tCSub"></div></div>
         <div class="op" id="op2">=</div>
-        <div class="tile total" id="tT"><div class="lab">Gesamt</div><div class="val num" id="tTVal">0</div><div class="sub">50 % <span id="tTWho"></span> · 50 % Chat</div></div>
+        <div class="tile total" id="tT"><div class="lab">Gesamt</div><div class="val num" id="tTVal">0</div><div class="sub" id="tTSub"></div></div>
       </div>
       <div class="place" id="place"></div>
     </section>
@@ -453,7 +453,9 @@
     $('resTitle').textContent = 'Meme #' + cur.number;
     $('resName').textContent = '@' + cur.name;
     $('tSLab').textContent = st.settings.streamerName;
-    $('tTWho').textContent = st.settings.streamerName;
+    const w = r.weight == null ? 50 : r.weight;
+    $('tTSub').textContent = !r.votes ? `nur ${st.settings.streamerName}, keine Chat-Stimmen`
+      : w >= 100 ? `nur ${st.settings.streamerName}` : w <= 0 ? 'nur Chat' : `${w} % ${st.settings.streamerName} · ${100 - w} % Chat`;
     $('tSVal').textContent = '0';
     $('tCVal').textContent = r.votes ? '0,00' : '–';
     $('tTVal').textContent = '0,00';
